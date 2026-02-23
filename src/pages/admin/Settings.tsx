@@ -24,6 +24,8 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [isWebhookOpen, setIsWebhookOpen] = useState(false);
+  const [testingWebhook, setTestingWebhook] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -76,6 +78,33 @@ export default function AdminSettings() {
       alert('Failed to upload image. Please try again.');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleWebhookTest = async () => {
+    if (!settings?.webhook_url) return;
+    setTestingWebhook(true);
+    try {
+      const response = await fetch(settings.webhook_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            event: 'test',
+            timestamp: new Date().toISOString(),
+            message: 'This is a test message from The Burger House Admin Panel'
+        })
+      });
+      
+      if (response.ok) {
+        alert('Webhook test successful! Status: ' + response.status);
+      } else {
+        alert('Webhook test failed. Status: ' + response.status);
+      }
+    } catch (error) {
+      console.error('Webhook test error:', error);
+      alert('Webhook test failed. Check console for details.');
+    } finally {
+      setTestingWebhook(false);
     }
   };
 
@@ -208,6 +237,39 @@ export default function AdminSettings() {
                             <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div 
+                onClick={() => setIsWebhookOpen(!isWebhookOpen)}
+                className="flex justify-between items-center mb-4 cursor-pointer"
+            >
+                <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Outbound Connectivity</h2>
+                <span className={`material-symbols-outlined text-slate-400 transition-transform ${isWebhookOpen ? 'rotate-180' : ''}`}>expand_more</span>
+            </div>
+            
+            <div className={`bg-white dark:bg-[#1e1411] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${isWebhookOpen ? 'max-h-[300px] opacity-100 p-4' : 'max-h-0 opacity-0 border-none'}`}>
+                <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Webhook URL</label>
+                    <div className="flex gap-2">
+                        <input 
+                            type="url" 
+                            value={settings?.webhook_url || ''} 
+                            onChange={(e) => setSettings(prev => prev ? ({ ...prev, webhook_url: e.target.value }) : null)}
+                            className="flex-1 bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium" 
+                            placeholder="https://api.example.com/webhook"
+                        />
+                        <button 
+                            onClick={handleWebhookTest}
+                            disabled={!settings?.webhook_url || testingWebhook}
+                            className="px-4 rounded-xl bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {testingWebhook ? 'Testing...' : 'Test'}
+                        </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">URL to receive order updates via POST requests</p>
                 </div>
             </div>
         </section>

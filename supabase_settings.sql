@@ -15,6 +15,7 @@ create table if not exists public.store_settings (
 -- Add columns if they don't exist (using standard SQL)
 alter table public.store_settings add column if not exists business_phone text default '57665303';
 alter table public.store_settings add column if not exists logo_url text;
+alter table public.store_settings add column if not exists webhook_url text;
 
 -- Ensure only one row exists
 create unique index if not exists one_row_only_uidx on public.store_settings ((true));

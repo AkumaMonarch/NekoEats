@@ -29,6 +29,7 @@ export interface StoreSettings {
   restaurant_name: string;
   business_phone?: string;
   logo_url?: string;
+  webhook_url?: string;
   is_open: boolean;
   opening_time: string; // Deprecated, kept for backward compatibility if needed
   closing_time: string; // Deprecated
