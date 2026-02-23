@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../store/cartStore';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -15,6 +15,27 @@ export default function Cart() {
   const [serviceOption, setServiceOption] = useState<'delivery' | 'pickup'>('delivery');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mobile'>('cash');
   const { settings } = useStoreSettings();
+  const [hasScrolledBottom, setHasScrolledBottom] = useState(false);
+  const [orderCode, setOrderCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkScroll = () => {
+      const isBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100;
+      const isShort = document.documentElement.scrollHeight <= window.innerHeight;
+      setHasScrolledBottom(isBottom || isShort);
+    };
+
+    window.addEventListener('scroll', checkScroll);
+    window.addEventListener('resize', checkScroll);
+    
+    // Check initially
+    checkScroll();
+
+    return () => {
+      window.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [step, items]);
 
   const cartTotal = total();
   const deliveryFee = serviceOption === 'delivery' ? 3.99 : 0;
@@ -68,12 +89,13 @@ export default function Cart() {
         const whatsappNumber = '57665303';
         const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
+        setOrderCode(order.order_code);
         setStep('success');
         
         setTimeout(() => {
             clearCart();
             window.location.href = whatsappUrl;
-        }, 2000);
+        }, 3000);
     } catch (error) {
         console.error('Failed to place order:', error);
         alert('Failed to place order. Please try again.');
@@ -97,6 +119,12 @@ export default function Cart() {
                 <span className="material-symbols-outlined text-white text-[72px]">check_circle</span>
             </div>
             <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-2">Order Placed!</h1>
+            {orderCode && (
+                <div className="bg-white dark:bg-white/10 px-6 py-3 rounded-xl border border-gray-100 dark:border-white/10 mb-6 shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Order Number</p>
+                    <p className="text-3xl font-black text-primary tracking-widest">{orderCode}</p>
+                </div>
+            )}
             <p className="text-lg text-slate-500 dark:text-gray-400">Redirecting to WhatsApp...</p>
         </div>
     );
@@ -225,18 +253,24 @@ export default function Cart() {
             </main>
 
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-background-dark/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/10 z-30">
+                {!hasScrolledBottom && (
+                    <div className="absolute bottom-full left-0 right-0 h-24 bg-gradient-to-t from-primary/20 to-transparent pointer-events-none animate-pulse" />
+                )}
                 <div className="max-w-md mx-auto">
                     <button 
                         onClick={handlePlaceOrder}
-                        disabled={loading}
-                        className="w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-transform"
+                        disabled={loading || !hasScrolledBottom}
+                        className={cn(
+                            "w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all",
+                            (loading || !hasScrolledBottom) && "opacity-50 cursor-not-allowed grayscale"
+                        )}
                     >
                         {loading ? (
                             <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                         ) : (
                             <>
-                                <span>Confirm Order</span>
-                                <span className="material-symbols-outlined">check</span>
+                                <span>{hasScrolledBottom ? "Confirm Order" : "Scroll to Confirm"}</span>
+                                <span className="material-symbols-outlined">{hasScrolledBottom ? "check" : "keyboard_double_arrow_down"}</span>
                             </>
                         )}
                     </button>
@@ -542,14 +576,21 @@ export default function Cart() {
 
       {items.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-background-dark/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/10 z-30">
+            {!hasScrolledBottom && (
+                <div className="absolute bottom-full left-0 right-0 h-24 bg-gradient-to-t from-primary/20 to-transparent pointer-events-none animate-pulse" />
+            )}
             <div className="mx-auto max-w-md">
                 {isOpen ? (
                     <div className="space-y-3">
                         <button 
                             onClick={handleCheckout}
-                            className="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center gap-2 active:scale-[0.97] transition-all"
+                            disabled={!hasScrolledBottom}
+                            className={cn(
+                                "w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center gap-2 active:scale-[0.97] transition-all",
+                                !hasScrolledBottom && "opacity-50 cursor-not-allowed grayscale"
+                            )}
                         >
-                            <span className="text-lg">Place Order</span>
+                            <span className="text-lg">{hasScrolledBottom ? "Place Order" : "Scroll to Continue"}</span>
                             <span className="h-5 w-px bg-white/30 mx-2"></span>
                             <span className="text-lg">${finalTotal.toFixed(2)}</span>
                         </button>
