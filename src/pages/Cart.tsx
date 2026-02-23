@@ -298,7 +298,7 @@ export default function Cart() {
                 </button>
             </header>
 
-            <main className="flex-1 px-6 pt-6 max-w-md mx-auto w-full">
+            <main className="flex-1 px-6 pt-6 max-w-md mx-auto w-full pb-40">
                 <div className="flex justify-center gap-2 mb-8">
                     <div className="h-1.5 w-8 rounded-full bg-primary/20"></div>
                     <div className="h-1.5 w-12 rounded-full bg-primary"></div>
@@ -366,7 +366,10 @@ export default function Cart() {
                 </div>
             </main>
 
-            <div className="p-4 bg-white/80 dark:bg-[#1c110c]/80 backdrop-blur-md border-t border-gray-200 dark:border-white/5">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-background-dark/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/10 z-30">
+                {!hasScrolledBottom && (
+                    <div className="absolute bottom-full left-0 right-0 h-24 bg-gradient-to-t from-primary/20 to-transparent pointer-events-none animate-pulse" />
+                )}
                 <div className="max-w-md mx-auto space-y-3">
                     <div className="flex justify-between px-2">
                         <span className="text-slate-500 font-medium">Total</span>
@@ -374,11 +377,14 @@ export default function Cart() {
                     </div>
                     <button 
                         onClick={() => setStep('review')}
-                        disabled={!contact.name || !contact.phone || (serviceOption === 'delivery' && !contact.address)}
-                        className="w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!contact.name || !contact.phone || (serviceOption === 'delivery' && !contact.address) || !hasScrolledBottom}
+                        className={cn(
+                            "w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all",
+                            (!contact.name || !contact.phone || (serviceOption === 'delivery' && !contact.address) || !hasScrolledBottom) && "opacity-50 cursor-not-allowed grayscale"
+                        )}
                     >
-                        <span>Review Order</span>
-                        <span className="material-symbols-outlined">arrow_forward</span>
+                        <span>{hasScrolledBottom ? "Review Order" : "Scroll to Review"}</span>
+                        <span className="material-symbols-outlined">{hasScrolledBottom ? "arrow_forward" : "keyboard_double_arrow_down"}</span>
                     </button>
                 </div>
             </div>
