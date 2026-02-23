@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../store/cartStore';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { orderService } from '../services/orderService';
 import { useStoreSettings } from '../hooks/useStoreSettings';
 
 export default function Cart() {
   const { items, removeItem, updateQuantity, total, clearCart } = useCartStore();
-  const navigate = useNavigate();
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [step, setStep] = useState<'cart' | 'contact' | 'review' | 'success'>('cart');
   const [contact, setContact] = useState({ name: '', phone: '', address: '', notes: '' });
   const [loading, setLoading] = useState(false);
@@ -73,16 +71,23 @@ export default function Cart() {
         });
 
         // Construct WhatsApp message
-        const itemsList = items.map(i => 
-          `${i.quantity}x ${i.name} ${i.selectedVariant ? `(${i.selectedVariant.name})` : ''} ${i.selectedAddons.length > 0 ? `+ ${i.selectedAddons.map(a => a.name).join(', ')}` : ''}`
-        ).join('\n');
+        const itemsList = items.map(i => {
+            let itemStr = `${i.quantity}x ${i.name}`;
+            if (i.selectedVariant) {
+                itemStr += ` (${i.selectedVariant.name})`;
+            }
+            if (i.selectedAddons.length > 0) {
+                itemStr += `\n    + ${i.selectedAddons.map(a => a.name).join(', ')}`;
+            }
+            return itemStr;
+        }).join('\n');
         
-        let message = `Order Number : ${order.order_code}\n`;
-        message += `1. 👤 ${contact.name}\n`;
-        message += `2. 📱 ${contact.phone}\n`;
-        message += `3. 📍 ${serviceOption === 'delivery' ? contact.address : 'Pickup'}\n`;
-        message += `4. 💬 ${contact.notes || 'No Special Notes'}\n`;
-        message += `5. 🍔 Order Details\n${itemsList}\n\n`;
+        let message = `Order Number : ${order.order_code}\n\n`;
+        message += `👤 ${contact.name}\n`;
+        message += `📱 ${contact.phone}\n`;
+        message += `📍 ${serviceOption === 'delivery' ? contact.address : 'Pickup'}\n`;
+        message += `💬 ${contact.notes || 'No Special Notes'}\n\n`;
+        message += `🍔 Order Details : -\n${itemsList}\n\n`;
         message += `Total: $${finalTotal.toFixed(2)}`;
 
         const encodedMessage = encodeURIComponent(message);
