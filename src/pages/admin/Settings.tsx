@@ -178,16 +178,8 @@ export default function AdminSettings() {
                                     disabled={uploading}
                                 />
                             </label>
-                            <span className="text-xs text-slate-400 font-bold uppercase">OR</span>
-                            <input 
-                                type="url" 
-                                value={settings?.logo_url || ''} 
-                                onChange={(e) => setSettings(prev => prev ? ({ ...prev, logo_url: e.target.value }) : null)}
-                                className="flex-1 bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium" 
-                                placeholder="Paste URL..."
-                            />
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1">Upload an image or paste a URL for your logo (PNG, JPG, GIF, SVG)</p>
+                        <p className="text-[10px] text-slate-400 mt-1">Upload an image for your logo (PNG, JPG, GIF, SVG)</p>
                     </div>
                 </div>
                 
