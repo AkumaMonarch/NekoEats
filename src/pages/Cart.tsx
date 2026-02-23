@@ -91,7 +91,7 @@ export default function Cart() {
         message += `Total: $${finalTotal.toFixed(2)}`;
 
         const encodedMessage = encodeURIComponent(message);
-        const whatsappNumber = '57665303';
+        const whatsappNumber = settings?.business_phone || '57665303';
         const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
         setOrderCode(order.order_code);

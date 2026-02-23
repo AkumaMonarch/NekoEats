@@ -18,31 +18,44 @@ import AdminSettings from './pages/admin/Settings';
 import AdminLogin from './pages/admin/Login';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { useStoreSettings } from './hooks/useStoreSettings';
+import { SplashScreen } from './components/SplashScreen';
+
+function AppContent() {
+  const { settings, loading } = useStoreSettings();
+
+  return (
+    <>
+      <SplashScreen isVisible={loading} logoUrl={settings?.logo_url} restaurantName={settings?.restaurant_name} />
+      <Routes>
+        {/* Customer Routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/menu" element={<Menu />} />
+        <Route path="/cart" element={<Cart />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="menu" element={<AdminMenu />} />
+          <Route path="categories" element={<AdminCategories />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
+  );
+}
 
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
-          <Routes>
-            {/* Customer Routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/menu" element={<Menu />} />
-            <Route path="/cart" element={<Cart />} />
-
-            {/* Admin Routes */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="orders" element={<AdminOrders />} />
-              <Route path="menu" element={<AdminMenu />} />
-              <Route path="categories" element={<AdminCategories />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
-
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <AppContent />
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { settingsService } from '../../services/settingsService';
+import { storageService } from '../../services/storageService';
 import { StoreSettings, WeeklySchedule, DaySchedule } from '../../lib/types';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -21,6 +22,7 @@ export default function AdminSettings() {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
@@ -59,6 +61,22 @@ export default function AdminSettings() {
             }
         };
     });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setUploading(true);
+    try {
+      const file = e.target.files[0];
+      const url = await storageService.uploadImage(file, 'menu-items'); // Reusing menu-items bucket for simplicity
+      setSettings(prev => prev ? ({ ...prev, logo_url: url }) : null);
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -110,6 +128,67 @@ export default function AdminSettings() {
                         onChange={(e) => setSettings(prev => prev ? ({ ...prev, restaurant_name: e.target.value }) : null)}
                         className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium" 
                     />
+                </div>
+
+                <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Business Phone Number</label>
+                    <input 
+                        type="tel" 
+                        value={settings?.business_phone || ''} 
+                        onChange={(e) => setSettings(prev => prev ? ({ ...prev, business_phone: e.target.value }) : null)}
+                        className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium" 
+                        placeholder="e.g. 57665303"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Used for WhatsApp/Telegram order links</p>
+                </div>
+
+                <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Logo</label>
+                    <div className="space-y-3">
+                        {settings?.logo_url && (
+                            <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5">
+                                <img src={settings.logo_url} alt="Logo Preview" className="w-full h-full object-contain p-4" />
+                                <button 
+                                    type="button"
+                                    onClick={() => setSettings(prev => prev ? ({ ...prev, logo_url: '' }) : null)}
+                                    className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"
+                                >
+                                    <span className="material-symbols-outlined text-sm">close</span>
+                                </button>
+                            </div>
+                        )}
+                        
+                        <div className="flex items-center gap-3">
+                            <label className="flex-1 cursor-pointer">
+                                <div className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-dashed border-gray-300 dark:border-white/20 hover:border-primary hover:text-primary transition-colors text-slate-500 dark:text-slate-400 text-sm font-medium">
+                                    {uploading ? (
+                                        <span className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined">cloud_upload</span>
+                                            Upload Logo
+                                        </>
+                                    )}
+                                </div>
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                    disabled={uploading}
+                                />
+                            </label>
+                            <span className="text-xs text-slate-400 font-bold uppercase">OR</span>
+                            <input 
+                                type="url" 
+                                value={settings?.logo_url || ''} 
+                                onChange={(e) => setSettings(prev => prev ? ({ ...prev, logo_url: e.target.value }) : null)}
+                                className="flex-1 bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium" 
+                                placeholder="Paste URL..."
+                            />
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1">Upload an image or paste a URL for your logo (PNG, JPG, GIF, SVG)</p>
+                    </div>
                 </div>
                 
                 <div className="mt-4">

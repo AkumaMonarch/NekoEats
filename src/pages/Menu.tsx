@@ -7,6 +7,7 @@ import { ItemModal } from '../components/ItemModal';
 import { CartFooter } from '../components/CartFooter';
 import { cn } from '../lib/utils';
 import { useDraggableScroll } from '../hooks/useDraggableScroll';
+import { useStoreSettings } from '../hooks/useStoreSettings';
 
 export default function Menu() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +18,7 @@ export default function Menu() {
   const [loading, setLoading] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { settings } = useStoreSettings();
   
   const scrollRef = useDraggableScroll();
   
@@ -101,7 +103,7 @@ export default function Menu() {
                 <button onClick={() => window.history.back()} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center active:scale-95 transition-transform">
                     <span className="material-symbols-outlined text-slate-900 dark:text-white">arrow_back_ios_new</span>
                 </button>
-                <h1 className="font-bold text-lg text-slate-900 dark:text-white uppercase tracking-wider">The Burger Lab</h1>
+                <h1 className="font-bold text-lg text-slate-900 dark:text-white uppercase tracking-wider">{settings?.restaurant_name || 'The Burger House'}</h1>
                 <button 
                     onClick={() => setIsSearchOpen(true)}
                     className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center active:scale-95 transition-transform"

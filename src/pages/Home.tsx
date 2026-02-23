@@ -43,9 +43,13 @@ export default function Home() {
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-200 dark:border-white/5 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white">
-                <span className="material-symbols-outlined text-lg">lunch_dining</span>
-            </div>
+            {settings?.logo_url ? (
+                <img src={settings.logo_url} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
+            ) : (
+                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white">
+                    <span className="material-symbols-outlined text-lg">lunch_dining</span>
+                </div>
+            )}
             <div>
                 <h1 className="text-sm font-bold leading-none text-slate-900 dark:text-white">{settings?.restaurant_name || 'THE BURGER HOUSE'}</h1>
                 <div className="flex items-center gap-1">
