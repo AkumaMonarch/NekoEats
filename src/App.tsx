@@ -26,18 +26,8 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             {/* Customer Routes */}
-            <Route path="/" element={
-              <>
-                <Home />
-                <Navbar />
-              </>
-            } />
-            <Route path="/menu" element={
-              <>
-                <Menu />
-                <Navbar />
-              </>
-            } />
+            <Route path="/" element={<Home />} />
+            <Route path="/menu" element={<Menu />} />
             <Route path="/cart" element={<Cart />} />
 
             {/* Admin Routes */}

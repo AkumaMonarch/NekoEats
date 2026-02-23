@@ -7,6 +7,10 @@ export const orderService = {
     customer_phone: string;
     total: number;
     items: CartItem[];
+    payment_method: string;
+    service_option: string;
+    delivery_address?: string;
+    notes?: string;
   }) {
     // 1. Create Order
     const orderCode = '#' + Math.floor(100 + Math.random() * 900).toString(); // Simple 3 digit code
@@ -18,7 +22,11 @@ export const orderService = {
         customer_name: order.customer_name,
         customer_phone: order.customer_phone,
         total: order.total,
-        status: 'pending'
+        status: 'pending',
+        payment_method: order.payment_method,
+        service_option: order.service_option,
+        delivery_address: order.delivery_address,
+        notes: order.notes
       })
       .select()
       .single();

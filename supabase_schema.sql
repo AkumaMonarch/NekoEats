@@ -25,7 +25,10 @@ create table public.orders (
   customer_phone text not null,
   total numeric not null,
   status text default 'pending' not null, -- 'pending', 'preparing', 'ready', 'completed', 'cancelled'
-  payment_method text default 'cash'
+  payment_method text default 'cash',
+  service_option text default 'delivery',
+  delivery_address text,
+  notes text
 );
 
 -- Create Order Items Table (to normalize data, though JSONB in orders is also an option for simple apps)
@@ -70,10 +73,10 @@ create policy "Orders are insertable by everyone"
   on public.orders for insert 
   with check (true);
 
--- Only authenticated users (admins) can view all orders
-create policy "Orders are viewable by authenticated users only" 
+-- Allow everyone to view orders (needed for returning data after insert)
+create policy "Orders are viewable by everyone" 
   on public.orders for select 
-  using (auth.role() = 'authenticated');
+  using (true);
 
 -- Only authenticated users (admins) can update orders
 create policy "Orders are updatable by authenticated users only" 
@@ -85,9 +88,9 @@ create policy "Order items are insertable by everyone"
   on public.order_items for insert 
   with check (true);
 
-create policy "Order items are viewable by authenticated users only" 
+create policy "Order items are viewable by everyone" 
   on public.order_items for select 
-  using (auth.role() = 'authenticated');
+  using (true);
 
 -- Seed Data (Optional - run this if you want initial data)
 insert into public.menu_items (name, description, price, image_url, category, popular, in_stock, variants, addons) values

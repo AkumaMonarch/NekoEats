@@ -10,12 +10,14 @@ export default function Cart() {
   const navigate = useNavigate();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [step, setStep] = useState<'cart' | 'contact' | 'review' | 'success'>('cart');
-  const [contact, setContact] = useState({ name: '', phone: '' });
+  const [contact, setContact] = useState({ name: '', phone: '', address: '', notes: '' });
   const [loading, setLoading] = useState(false);
+  const [serviceOption, setServiceOption] = useState<'delivery' | 'pickup'>('delivery');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mobile'>('cash');
   const { settings } = useStoreSettings();
 
   const cartTotal = total();
-  const deliveryFee = 3.99;
+  const deliveryFee = serviceOption === 'delivery' ? 3.99 : 0;
   const finalTotal = cartTotal + deliveryFee;
   const isOpen = settings?.is_open ?? true;
 
@@ -30,6 +32,10 @@ export default function Cart() {
 
   const handlePlaceOrder = async () => {
     if (!contact.name || !contact.phone) return;
+    if (serviceOption === 'delivery' && !contact.address) {
+        alert('Please provide a delivery address');
+        return;
+    }
     setLoading(true);
 
     try {
@@ -38,7 +44,11 @@ export default function Cart() {
             customer_name: contact.name,
             customer_phone: contact.phone,
             total: finalTotal,
-            items: items
+            items: items,
+            payment_method: paymentMethod,
+            service_option: serviceOption,
+            delivery_address: contact.address,
+            notes: contact.notes
         });
 
         // Construct WhatsApp message
@@ -46,9 +56,16 @@ export default function Cart() {
           `${i.quantity}x ${i.name} ${i.selectedVariant ? `(${i.selectedVariant.name})` : ''} ${i.selectedAddons.length > 0 ? `+ ${i.selectedAddons.map(a => a.name).join(', ')}` : ''}`
         ).join('\n');
         
-        const message = `New Order ${order.order_code}\nName: ${contact.name}\nPhone: ${contact.phone}\n\n${itemsList}\n\nTotal: $${finalTotal.toFixed(2)}`;
+        let message = `Order Number : ${order.order_code}\n`;
+        message += `1. 👤 ${contact.name}\n`;
+        message += `2. 📱 ${contact.phone}\n`;
+        message += `3. 📍 ${serviceOption === 'delivery' ? contact.address : 'Pickup'}\n`;
+        message += `4. 💬 ${contact.notes || 'No Special Notes'}\n`;
+        message += `5. 🍔 Order Details\n${itemsList}\n\n`;
+        message += `Total: $${finalTotal.toFixed(2)}`;
+
         const encodedMessage = encodeURIComponent(message);
-        const whatsappNumber = process.env.WHATSAPP_NUMBER || '23057665303';
+        const whatsappNumber = '57665303';
         const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
         setStep('success');
@@ -63,6 +80,14 @@ export default function Cart() {
     } finally {
         setLoading(false);
     }
+  };
+
+  const handleClearCart = () => {
+    clearCart();
+    setStep('cart');
+    setContact({ name: '', phone: '', address: '', notes: '' });
+    setServiceOption('delivery');
+    setPaymentMethod('cash');
   };
 
   if (step === 'success') {
@@ -85,7 +110,9 @@ export default function Cart() {
                     <span className="material-symbols-outlined text-primary">arrow_back_ios_new</span>
                 </button>
                 <h1 className="text-lg font-bold text-slate-900 dark:text-white">Review Order</h1>
-                <div className="w-10"></div>
+                <button onClick={handleClearCart} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <span className="material-symbols-outlined">delete</span>
+                </button>
             </header>
 
             <main className="flex-1 px-6 pt-6 max-w-md mx-auto w-full pb-32">
@@ -109,6 +136,45 @@ export default function Cart() {
                             <div>
                                 <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Phone</p>
                                 <p className="text-slate-900 dark:text-white font-medium">{contact.phone}</p>
+                            </div>
+                            {serviceOption === 'delivery' && (
+                                <div>
+                                    <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Address</p>
+                                    <p className="text-slate-900 dark:text-white font-medium">{contact.address}</p>
+                                </div>
+                            )}
+                            {contact.notes && (
+                                <div>
+                                    <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Notes</p>
+                                    <p className="text-slate-900 dark:text-white font-medium">{contact.notes}</p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    <section className="bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Order Details</h2>
+                            <button onClick={() => setStep('cart')} className="text-primary text-xs font-bold uppercase tracking-wider">Edit</button>
+                        </div>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Service Option</p>
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary text-lg">
+                                        {serviceOption === 'delivery' ? 'local_shipping' : 'store'}
+                                    </span>
+                                    <p className="text-slate-900 dark:text-white font-medium capitalize">{serviceOption}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Payment</p>
+                                <div className="flex items-center gap-2 justify-end">
+                                    <span className="material-symbols-outlined text-primary text-lg">
+                                        {paymentMethod === 'cash' ? 'payments' : 'account_balance_wallet'}
+                                    </span>
+                                    <p className="text-slate-900 dark:text-white font-medium capitalize">{paymentMethod === 'mobile' ? 'Mobile Pay' : 'Cash'}</p>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -188,7 +254,9 @@ export default function Cart() {
                     <span className="material-symbols-outlined text-primary">arrow_back_ios_new</span>
                 </button>
                 <h1 className="text-lg font-bold text-slate-900 dark:text-white">Contact Details</h1>
-                <div className="w-10"></div>
+                <button onClick={handleClearCart} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <span className="material-symbols-outlined">delete</span>
+                </button>
             </header>
 
             <main className="flex-1 px-6 pt-6 max-w-md mx-auto w-full">
@@ -228,6 +296,34 @@ export default function Cart() {
                             />
                         </div>
                     </div>
+
+                    {serviceOption === 'delivery' && (
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white ml-1">Delivery Address</label>
+                            <div className="relative">
+                                <span className="material-symbols-outlined absolute left-4 top-4 text-gray-400">location_on</span>
+                                <textarea 
+                                    value={contact.address}
+                                    onChange={(e) => setContact({...contact, address: e.target.value})}
+                                    className="w-full h-24 pl-12 pt-3 rounded-xl border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white focus:ring-primary focus:border-primary resize-none"
+                                    placeholder="Enter your full delivery address"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-900 dark:text-white ml-1">Special Notes (Optional)</label>
+                        <div className="relative">
+                            <span className="material-symbols-outlined absolute left-4 top-4 text-gray-400">chat</span>
+                            <textarea 
+                                value={contact.notes}
+                                onChange={(e) => setContact({...contact, notes: e.target.value})}
+                                className="w-full h-24 pl-12 pt-3 rounded-xl border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white focus:ring-primary focus:border-primary resize-none"
+                                placeholder="Any special instructions for the kitchen?"
+                            />
+                        </div>
+                    </div>
                 </div>
             </main>
 
@@ -239,7 +335,7 @@ export default function Cart() {
                     </div>
                     <button 
                         onClick={() => setStep('review')}
-                        disabled={!contact.name || !contact.phone}
+                        disabled={!contact.name || !contact.phone || (serviceOption === 'delivery' && !contact.address)}
                         className="w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <span>Review Order</span>
@@ -258,7 +354,13 @@ export default function Cart() {
             <span className="material-symbols-outlined text-slate-900 dark:text-white">arrow_back_ios_new</span>
         </button>
         <h1 className="font-bold text-lg text-slate-900 dark:text-white">Checkout</h1>
-        <div className="w-10"></div>
+        {items.length > 0 ? (
+            <button onClick={handleClearCart} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <span className="material-symbols-outlined">delete</span>
+            </button>
+        ) : (
+            <div className="w-10"></div>
+        )}
       </header>
 
       <main className="px-4 py-6 space-y-6 max-w-md mx-auto">
@@ -308,6 +410,116 @@ export default function Cart() {
                     ))}
                 </section>
 
+                {/* Service Option */}
+                <section className="space-y-3">
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 px-1">Service Option</h2>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button 
+                            onClick={() => setServiceOption('delivery')}
+                            className={cn(
+                                "p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all",
+                                serviceOption === 'delivery' 
+                                    ? "border-primary bg-primary/5" 
+                                    : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
+                            )}
+                        >
+                            <div className={cn(
+                                "h-10 w-10 rounded-full flex items-center justify-center",
+                                serviceOption === 'delivery' ? "bg-primary/10 text-primary" : "bg-gray-100 dark:bg-white/10 text-gray-400"
+                            )}>
+                                <span className="material-symbols-outlined">local_shipping</span>
+                            </div>
+                            <div className="text-center">
+                                <p className={cn("font-bold text-sm", serviceOption === 'delivery' ? "text-primary" : "text-slate-900 dark:text-white")}>Delivery</p>
+                                <p className="text-[10px] text-slate-500">Delivery to your door</p>
+                            </div>
+                        </button>
+                        <button 
+                            onClick={() => setServiceOption('pickup')}
+                            className={cn(
+                                "p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all",
+                                serviceOption === 'pickup' 
+                                    ? "border-primary bg-primary/5" 
+                                    : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
+                            )}
+                        >
+                            <div className={cn(
+                                "h-10 w-10 rounded-full flex items-center justify-center",
+                                serviceOption === 'pickup' ? "bg-primary/10 text-primary" : "bg-gray-100 dark:bg-white/10 text-gray-400"
+                            )}>
+                                <span className="material-symbols-outlined">store</span>
+                            </div>
+                            <div className="text-center">
+                                <p className={cn("font-bold text-sm", serviceOption === 'pickup' ? "text-primary" : "text-slate-900 dark:text-white")}>Pickup</p>
+                                <p className="text-[10px] text-slate-500">At the counter</p>
+                            </div>
+                        </button>
+                    </div>
+                </section>
+
+                {/* Payment Method */}
+                <section className="space-y-3">
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 px-1">Payment Method</h2>
+                    <div className="space-y-3">
+                        <button 
+                            onClick={() => setPaymentMethod('cash')}
+                            className={cn(
+                                "w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all",
+                                paymentMethod === 'cash' 
+                                    ? "border-primary bg-primary/5" 
+                                    : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
+                            )}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className={cn(
+                                    "h-10 w-10 rounded-full flex items-center justify-center",
+                                    paymentMethod === 'cash' ? "bg-primary/10 text-primary" : "bg-gray-100 dark:bg-white/10 text-gray-400"
+                                )}>
+                                    <span className="material-symbols-outlined">payments</span>
+                                </div>
+                                <div className="text-left">
+                                    <p className={cn("font-bold text-sm", paymentMethod === 'cash' ? "text-primary" : "text-slate-900 dark:text-white")}>Cash</p>
+                                    <p className="text-[10px] text-slate-500">Pay with physical currency</p>
+                                </div>
+                            </div>
+                            <div className={cn(
+                                "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                paymentMethod === 'cash' ? "border-primary" : "border-gray-300"
+                            )}>
+                                {paymentMethod === 'cash' && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                            </div>
+                        </button>
+                        <button 
+                            onClick={() => setPaymentMethod('mobile')}
+                            className={cn(
+                                "w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all",
+                                paymentMethod === 'mobile' 
+                                    ? "border-primary bg-primary/5" 
+                                    : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
+                            )}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className={cn(
+                                    "h-10 w-10 rounded-full flex items-center justify-center",
+                                    paymentMethod === 'mobile' ? "bg-primary/10 text-primary" : "bg-gray-100 dark:bg-white/10 text-gray-400"
+                                )}>
+                                    <span className="material-symbols-outlined">account_balance_wallet</span>
+                                </div>
+                                <div className="text-left">
+                                    <p className={cn("font-bold text-sm", paymentMethod === 'mobile' ? "text-primary" : "text-slate-900 dark:text-white")}>Mobile Payment</p>
+                                    <p className="text-[10px] text-slate-500">Apple Pay or Digital Wallets</p>
+                                </div>
+                            </div>
+                            <div className={cn(
+                                "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                paymentMethod === 'mobile' ? "border-primary" : "border-gray-300"
+                            )}>
+                                {paymentMethod === 'mobile' && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                            </div>
+                        </button>
+                    </div>
+                </section>
+
                 <section className="bg-white dark:bg-white/5 rounded-2xl p-5 space-y-3 border border-gray-100 dark:border-white/5 shadow-sm">
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-500 dark:text-gray-400">Subtotal</span>
@@ -332,14 +544,17 @@ export default function Cart() {
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-background-dark/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/10 z-30">
             <div className="mx-auto max-w-md">
                 {isOpen ? (
-                    <button 
-                        onClick={handleCheckout}
-                        className="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center gap-2 active:scale-[0.97] transition-all"
-                    >
-                        <span className="text-lg">Checkout</span>
-                        <span className="h-5 w-px bg-white/30 mx-2"></span>
-                        <span className="text-lg">${finalTotal.toFixed(2)}</span>
-                    </button>
+                    <div className="space-y-3">
+                        <button 
+                            onClick={handleCheckout}
+                            className="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center gap-2 active:scale-[0.97] transition-all"
+                        >
+                            <span className="text-lg">Place Order</span>
+                            <span className="h-5 w-px bg-white/30 mx-2"></span>
+                            <span className="text-lg">${finalTotal.toFixed(2)}</span>
+                        </button>
+                        <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-wider">Verification will follow on the next screen</p>
+                    </div>
                 ) : (
                     <button 
                         disabled

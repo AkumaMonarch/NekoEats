@@ -4,6 +4,7 @@ import { menuService } from '../services/menuService';
 import { categoryService } from '../services/categoryService';
 import { MenuItem, CategoryItem } from '../lib/types';
 import { ItemModal } from '../components/ItemModal';
+import { CartFooter } from '../components/CartFooter';
 import { cn } from '../lib/utils';
 import { useDraggableScroll } from '../hooks/useDraggableScroll';
 
@@ -222,6 +223,8 @@ export default function Menu() {
             }} 
         />
       )}
+      
+      <CartFooter />
     </div>
   );
 }

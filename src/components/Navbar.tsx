@@ -58,19 +58,6 @@ export function Navbar() {
             </span>
           )}
         </Link>
-
-        <Link to="/admin" className="group flex flex-col items-center gap-1">
-          <div className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200",
-            location.pathname.startsWith('/admin') ? "bg-primary/10 text-primary" : "group-hover:bg-slate-100 dark:group-hover:bg-white/5 text-slate-400 dark:text-white/40"
-          )}>
-            <span className="material-symbols-outlined text-[24px]">admin_panel_settings</span>
-          </div>
-          <span className={cn(
-            "text-[10px] font-bold uppercase tracking-[0.05em]",
-            location.pathname.startsWith('/admin') ? "text-primary" : "text-slate-400 dark:text-white/40"
-          )}>Admin</span>
-        </Link>
       </div>
     </nav>
   );

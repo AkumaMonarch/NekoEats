@@ -6,6 +6,7 @@ import { categoryService } from '../services/categoryService';
 import { MenuItem, CategoryItem } from '../lib/types';
 import { useStoreSettings } from '../hooks/useStoreSettings';
 import { useTheme } from '../contexts/ThemeContext';
+import { CartFooter } from '../components/CartFooter';
 
 export default function Home() {
   const [popularItems, setPopularItems] = useState<MenuItem[]>([]);
@@ -93,7 +94,10 @@ export default function Home() {
 
       {/* Categories */}
       <div className="px-4 mb-8">
-        <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-white">Browse Menu</h3>
+        <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Browse Menu</h3>
+            <Link to="/menu" className="text-primary text-sm font-bold">See All</Link>
+        </div>
         {loading ? (
             <div className="grid grid-cols-2 gap-3">
                 {[1,2,3,4].map(i => (
@@ -152,6 +156,8 @@ export default function Home() {
             </div>
         )}
       </div>
+
+      <CartFooter />
     </div>
   );
 }
