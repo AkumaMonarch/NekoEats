@@ -38,12 +38,7 @@ export default function App() {
                 <Navbar />
               </>
             } />
-            <Route path="/cart" element={
-              <>
-                <Cart />
-                <Navbar />
-              </>
-            } />
+            <Route path="/cart" element={<Cart />} />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />

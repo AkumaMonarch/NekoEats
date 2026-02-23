@@ -71,9 +71,9 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                 </div>
 
                 <div className="px-6 pt-6 pb-4">
-                    <div className="flex justify-between items-start mb-2">
-                        <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white leading-tight">{item.name}</h2>
-                        <span className="bg-primary/10 text-primary text-sm font-bold px-2 py-1 rounded-lg">
+                    <div className="flex justify-between items-start gap-4 mb-2">
+                        <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white leading-tight flex-1">{item.name}</h2>
+                        <span className="bg-primary/10 text-primary text-sm font-bold px-2 py-1 rounded-lg shrink-0">
                             ${basePrice.toFixed(2)}
                         </span>
                     </div>
@@ -190,7 +190,7 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                         onClick={handleAddToCart}
                         className="flex-1 bg-primary h-14 rounded-full flex items-center justify-center gap-2 px-6 text-white font-bold transition-transform active:scale-[0.98] shadow-lg shadow-primary/20"
                     >
-                        <span className="text-base">Add to Order</span>
+                        <span className="text-base">Add</span>
                         <span className="text-base">•</span>
                         <span className="text-base">${totalPrice.toFixed(2)}</span>
                     </button>

@@ -9,7 +9,7 @@ export default function Cart() {
   const { items, removeItem, updateQuantity, total, clearCart } = useCartStore();
   const navigate = useNavigate();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [step, setStep] = useState<'cart' | 'contact' | 'success'>('cart');
+  const [step, setStep] = useState<'cart' | 'contact' | 'review' | 'success'>('cart');
   const [contact, setContact] = useState({ name: '', phone: '' });
   const [loading, setLoading] = useState(false);
   const { settings } = useStoreSettings();
@@ -77,6 +77,109 @@ export default function Cart() {
     );
   }
 
+  if (step === 'review') {
+    return (
+        <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark">
+            <header className="bg-white dark:bg-[#1c110c] border-b border-gray-200 dark:border-white/5 sticky top-0 z-10 px-4 py-4 flex items-center justify-between">
+                <button onClick={() => setStep('contact')} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                    <span className="material-symbols-outlined text-primary">arrow_back_ios_new</span>
+                </button>
+                <h1 className="text-lg font-bold text-slate-900 dark:text-white">Review Order</h1>
+                <div className="w-10"></div>
+            </header>
+
+            <main className="flex-1 px-6 pt-6 max-w-md mx-auto w-full pb-32">
+                <div className="flex justify-center gap-2 mb-8">
+                    <div className="h-1.5 w-8 rounded-full bg-primary/20"></div>
+                    <div className="h-1.5 w-8 rounded-full bg-primary/20"></div>
+                    <div className="h-1.5 w-12 rounded-full bg-primary"></div>
+                </div>
+
+                <div className="space-y-6">
+                    <section className="bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Contact Details</h2>
+                            <button onClick={() => setStep('contact')} className="text-primary text-xs font-bold uppercase tracking-wider">Edit</button>
+                        </div>
+                        <div className="space-y-2">
+                            <div>
+                                <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Name</p>
+                                <p className="text-slate-900 dark:text-white font-medium">{contact.name}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Phone</p>
+                                <p className="text-slate-900 dark:text-white font-medium">{contact.phone}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Order Summary</h2>
+                            <button onClick={() => setStep('cart')} className="text-primary text-xs font-bold uppercase tracking-wider">Edit</button>
+                        </div>
+                        <div className="space-y-4">
+                            {items.map((item) => (
+                                <div key={item.cartId} className="flex gap-3">
+                                    <div className="h-12 w-12 bg-gray-100 dark:bg-white/5 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
+                                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                                <span className="text-primary mr-1">{item.quantity}x</span>
+                                                {item.name}
+                                            </h3>
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white">${((item.selectedVariant?.price || item.price) * item.quantity).toFixed(2)}</p>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 dark:text-gray-400 line-clamp-1">
+                                            {item.selectedVariant?.name}
+                                            {item.selectedAddons.length > 0 && `, ${item.selectedAddons.map(a => a.name).join(', ')}`}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-white/10 space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-500 dark:text-gray-400">Subtotal</span>
+                                <span className="font-semibold text-slate-900 dark:text-white">${cartTotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-500 dark:text-gray-400">Delivery Fee</span>
+                                <span className="font-semibold text-slate-900 dark:text-white">${deliveryFee.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-end pt-2">
+                                <span className="text-sm font-bold text-slate-900 dark:text-white">Total</span>
+                                <span className="text-xl font-black text-primary">${finalTotal.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-background-dark/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/10 z-30">
+                <div className="max-w-md mx-auto">
+                    <button 
+                        onClick={handlePlaceOrder}
+                        disabled={loading}
+                        className="w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-transform"
+                    >
+                        {loading ? (
+                            <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                        ) : (
+                            <>
+                                <span>Confirm Order</span>
+                                <span className="material-symbols-outlined">check</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+  }
+
   if (step === 'contact') {
     return (
         <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark">
@@ -135,18 +238,12 @@ export default function Cart() {
                         <span className="text-slate-900 dark:text-white font-bold text-lg">${finalTotal.toFixed(2)}</span>
                     </div>
                     <button 
-                        onClick={handlePlaceOrder}
-                        disabled={!contact.name || !contact.phone || loading}
+                        onClick={() => setStep('review')}
+                        disabled={!contact.name || !contact.phone}
                         className="w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {loading ? (
-                            <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        ) : (
-                            <>
-                                <span>Complete Order</span>
-                                <span className="material-symbols-outlined">arrow_forward</span>
-                            </>
-                        )}
+                        <span>Review Order</span>
+                        <span className="material-symbols-outlined">arrow_forward</span>
                     </button>
                 </div>
             </div>
