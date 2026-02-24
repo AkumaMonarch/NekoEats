@@ -67,39 +67,17 @@ export default function Cart() {
             payment_method: paymentMethod,
             service_option: serviceOption,
             delivery_address: contact.address,
-            notes: contact.notes
+            notes: contact.notes,
+            webhookUrl: settings?.webhook_url
         });
-
-        // Construct WhatsApp message
-        const itemsList = items.map(i => {
-            let itemStr = `${i.quantity}x ${i.name}`;
-            if (i.selectedVariant) {
-                itemStr += ` (${i.selectedVariant.name})`;
-            }
-            if (i.selectedAddons.length > 0) {
-                itemStr += `\n    + ${i.selectedAddons.map(a => a.name).join(', ')}`;
-            }
-            return itemStr;
-        }).join('\n');
-        
-        let message = `Order Number : ${order.order_code}\n\n`;
-        message += `👤 ${contact.name}\n`;
-        message += `📱 ${contact.phone}\n`;
-        message += `📍 ${serviceOption === 'delivery' ? contact.address : 'Pickup'}\n`;
-        message += `💬 ${contact.notes || 'No Special Notes'}\n\n`;
-        message += `🍔 Order Details : -\n${itemsList}\n\n`;
-        message += `Total: $${finalTotal.toFixed(2)}`;
-
-        const encodedMessage = encodeURIComponent(message);
-        const whatsappNumber = settings?.business_phone || '57665303';
-        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
         setOrderCode(order.order_code);
         setStep('success');
         
         setTimeout(() => {
             clearCart();
-            window.location.href = whatsappUrl;
+            // No redirect, just clear cart and let user see success screen
+            // window.location.href = '/'; // Or redirect to home after a longer delay if desired
         }, 3000);
     } catch (error) {
         console.error('Failed to place order:', error);
@@ -130,7 +108,14 @@ export default function Cart() {
                     <p className="text-3xl font-black text-primary tracking-widest">{orderCode}</p>
                 </div>
             )}
-            <p className="text-lg text-slate-500 dark:text-gray-400">Redirecting to WhatsApp...</p>
+            <p className="text-lg text-slate-500 dark:text-gray-400 mb-8 max-w-xs mx-auto">
+                {settings?.webhook_url 
+                    ? "You will receive a WhatsApp confirmation shortly." 
+                    : "Thank you for your order!"}
+            </p>
+            <Link to="/" className="bg-gray-100 dark:bg-white/10 text-slate-900 dark:text-white font-bold px-8 py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">
+                Back to Home
+            </Link>
         </div>
     );
   }

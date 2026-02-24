@@ -211,13 +211,21 @@ export default function AdminOrders() {
                             {/* Status Tracker */}
                             <div className="flex justify-between items-center py-6 px-2 relative">
                                 <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 dark:bg-white/10 -z-10 -translate-y-1/2"></div>
-                                {['pending', 'preparing', 'ready', 'completed'].map((step, idx) => {
-                                    const steps = ['pending', 'preparing', 'ready', 'completed'];
+                                {['awaiting_confirmation', 'pending', 'preparing', 'ready', 'completed'].map((step, idx) => {
+                                    const steps = ['awaiting_confirmation', 'pending', 'preparing', 'ready', 'completed'];
                                     const currentIdx = steps.indexOf(order.status);
+                                    // If order status is not in the list (e.g. cancelled), handle gracefully
+                                    if (currentIdx === -1 && order.status !== 'cancelled') return null;
+                                    
                                     const stepIdx = steps.indexOf(step);
                                     const isActive = stepIdx <= currentIdx;
                                     const isCurrent = stepIdx === currentIdx;
 
+                                    // Skip awaiting_confirmation in the UI if the order started at pending (legacy or no webhook)
+                                    // But if the order IS awaiting_confirmation, we must show it.
+                                    // Actually, let's just show all steps for consistency, or maybe hide awaiting_confirmation if it's already passed?
+                                    // For simplicity, let's show all.
+                                    
                                     return (
                                         <div key={step} className="flex flex-col items-center gap-2 bg-white dark:bg-[#160e0c] px-1 z-10">
                                             <div className={cn(
@@ -225,6 +233,7 @@ export default function AdminOrders() {
                                                 isActive ? "bg-primary text-white" : "bg-gray-200 dark:bg-white/10 text-slate-400"
                                             )}>
                                                 <span className="material-symbols-outlined text-sm">
+                                                    {step === 'awaiting_confirmation' && 'hourglass_empty'}
                                                     {step === 'pending' && 'receipt_long'}
                                                     {step === 'preparing' && 'skillet'}
                                                     {step === 'ready' && 'check'}
@@ -235,7 +244,9 @@ export default function AdminOrders() {
                                             <span className={cn(
                                                 "text-[9px] font-bold uppercase",
                                                 isActive ? "text-primary" : "text-slate-400"
-                                            )}>{step}</span>
+                                            )}>
+                                                {step === 'awaiting_confirmation' ? 'Confirming' : step}
+                                            </span>
                                         </div>
                                     );
                                 })}
@@ -306,6 +317,15 @@ export default function AdminOrders() {
                                         </button>
                                     </div>
                                     
+                                    {order.status === 'awaiting_confirmation' && (
+                                        <button 
+                                            onClick={() => handleStatusUpdate(order.id, 'pending')}
+                                            className="w-full py-4 rounded-xl bg-blue-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+                                        >
+                                            MANUAL CONFIRM
+                                            <span className="material-symbols-outlined text-lg">check</span>
+                                        </button>
+                                    )}
                                     {order.status === 'pending' && (
                                         <button 
                                             onClick={() => handleStatusUpdate(order.id, 'preparing')}

@@ -76,7 +76,7 @@ export interface Order {
   customer_phone: string;
   items: CartItem[];
   total: number;
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'awaiting_confirmation';
   created_at: string;
   payment_method: 'cash' | 'card';
 }

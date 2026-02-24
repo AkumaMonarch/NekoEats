@@ -25,6 +25,7 @@ export default function AdminSettings() {
   const [uploading, setUploading] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isWebhookOpen, setIsWebhookOpen] = useState(false);
+  const [isBrandingOpen, setIsBrandingOpen] = useState(true);
   const [testingWebhook, setTestingWebhook] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
@@ -147,94 +148,103 @@ export default function AdminSettings() {
 
       <main className="p-4 space-y-6 max-w-md mx-auto">
         <section>
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Branding</h2>
-            <div className="bg-white dark:bg-[#1e1411] rounded-2xl p-4 border border-gray-200 dark:border-white/5 space-y-4">
-                <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Restaurant Name</label>
-                    <input 
-                        type="text" 
-                        value={settings?.restaurant_name || ''} 
-                        onChange={(e) => setSettings(prev => prev ? ({ ...prev, restaurant_name: e.target.value }) : null)}
-                        className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium" 
-                    />
-                </div>
-
-                <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Business Phone Number</label>
-                    <input 
-                        type="tel" 
-                        value={settings?.business_phone || ''} 
-                        onChange={(e) => setSettings(prev => prev ? ({ ...prev, business_phone: e.target.value }) : null)}
-                        className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium" 
-                        placeholder="e.g. 57665303"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1">Used for WhatsApp/Telegram order links</p>
-                </div>
-
-                <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Logo</label>
-                    <div className="space-y-3">
-                        {settings?.logo_url && (
-                            <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5">
-                                <img src={settings.logo_url} alt="Logo Preview" className="w-full h-full object-contain p-4" />
-                                <button 
-                                    type="button"
-                                    onClick={() => setSettings(prev => prev ? ({ ...prev, logo_url: '' }) : null)}
-                                    className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"
-                                >
-                                    <span className="material-symbols-outlined text-sm">close</span>
-                                </button>
-                            </div>
-                        )}
-                        
-                        <div className="flex items-center gap-3">
-                            <label className="flex-1 cursor-pointer">
-                                <div className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-dashed border-gray-300 dark:border-white/20 hover:border-primary hover:text-primary transition-colors text-slate-500 dark:text-slate-400 text-sm font-medium">
-                                    {uploading ? (
-                                        <span className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
-                                    ) : (
-                                        <>
-                                            <span className="material-symbols-outlined">cloud_upload</span>
-                                            Upload Logo
-                                        </>
-                                    )}
-                                </div>
-                                <input 
-                                    type="file" 
-                                    accept="image/*" 
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                    disabled={uploading}
-                                />
-                            </label>
-                        </div>
-                        <p className="text-[10px] text-slate-400 mt-1">Upload an image for your logo (PNG, JPG, GIF, SVG)</p>
+            <div 
+                onClick={() => setIsBrandingOpen(!isBrandingOpen)}
+                className="flex justify-between items-center mb-4 cursor-pointer"
+            >
+                <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Branding</h2>
+                <span className={`material-symbols-outlined text-slate-400 transition-transform ${isBrandingOpen ? 'rotate-180' : ''}`}>expand_more</span>
+            </div>
+            
+            <div className={`bg-white dark:bg-[#1e1411] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${isBrandingOpen ? 'max-h-[800px] opacity-100 p-4' : 'max-h-0 opacity-0 border-none'}`}>
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Restaurant Name</label>
+                        <input 
+                            type="text" 
+                            value={settings?.restaurant_name || ''} 
+                            onChange={(e) => setSettings(prev => prev ? ({ ...prev, restaurant_name: e.target.value }) : null)}
+                            className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium" 
+                        />
                     </div>
-                </div>
-                
-                <div className="mt-4">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Appearance</label>
-                    <div 
-                        onClick={toggleTheme}
-                        className="flex items-center justify-between p-4 bg-white dark:bg-[#1e1411] border border-gray-200 dark:border-white/5 rounded-2xl cursor-pointer active:scale-[0.98] transition-transform shadow-sm dark:shadow-none"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-[#FF5C00] flex items-center justify-center text-white shadow-lg shadow-[#FF5C00]/20">
-                                <span className="material-symbols-outlined text-[20px]">
-                                    {theme === 'dark' ? 'dark_mode' : 'light_mode'}
-                                </span>
+
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Business Phone Number</label>
+                        <input 
+                            type="tel" 
+                            value={settings?.business_phone || ''} 
+                            onChange={(e) => setSettings(prev => prev ? ({ ...prev, business_phone: e.target.value }) : null)}
+                            className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium" 
+                            placeholder="e.g. 57665303"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-1">Used for WhatsApp/Telegram order links</p>
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Logo</label>
+                        <div className="space-y-3">
+                            {settings?.logo_url && (
+                                <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5">
+                                    <img src={settings.logo_url} alt="Logo Preview" className="w-full h-full object-contain p-4" />
+                                    <button 
+                                        type="button"
+                                        onClick={() => setSettings(prev => prev ? ({ ...prev, logo_url: '' }) : null)}
+                                        className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"
+                                    >
+                                        <span className="material-symbols-outlined text-sm">close</span>
+                                    </button>
+                                </div>
+                            )}
+                            
+                            <div className="flex items-center gap-3">
+                                <label className="flex-1 cursor-pointer">
+                                    <div className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-dashed border-gray-300 dark:border-white/20 hover:border-primary hover:text-primary transition-colors text-slate-500 dark:text-slate-400 text-sm font-medium">
+                                        {uploading ? (
+                                            <span className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                                        ) : (
+                                            <>
+                                                <span className="material-symbols-outlined">cloud_upload</span>
+                                                Upload Logo
+                                            </>
+                                        )}
+                                    </div>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={handleImageUpload}
+                                        className="hidden"
+                                        disabled={uploading}
+                                    />
+                                </label>
                             </div>
-                            <div>
-                                <p className="font-bold text-sm text-slate-900 dark:text-white">
-                                    Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
-                                </p>
-                                <p className="text-xs text-slate-500 font-medium">
-                                    Currently in {theme} mode
-                                </p>
-                            </div>
+                            <p className="text-[10px] text-slate-400 mt-1">Upload an image for your logo (PNG, JPG, GIF, SVG)</p>
                         </div>
-                        <div className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none ${theme === 'dark' ? 'bg-[#FF5C00]' : 'bg-gray-200 dark:bg-slate-700'}`}>
-                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
+                    </div>
+                    
+                    <div className="mt-4">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Appearance</label>
+                        <div 
+                            onClick={toggleTheme}
+                            className="flex items-center justify-between p-4 bg-white dark:bg-[#1e1411] border border-gray-200 dark:border-white/5 rounded-2xl cursor-pointer active:scale-[0.98] transition-transform shadow-sm dark:shadow-none"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-[#FF5C00] flex items-center justify-center text-white shadow-lg shadow-[#FF5C00]/20">
+                                    <span className="material-symbols-outlined text-[20px]">
+                                        {theme === 'dark' ? 'dark_mode' : 'light_mode'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="font-bold text-sm text-slate-900 dark:text-white">
+                                        Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
+                                    </p>
+                                    <p className="text-xs text-slate-500 font-medium">
+                                        Currently in {theme} mode
+                                    </p>
+                                </div>
+                            </div>
+                            <div className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none ${theme === 'dark' ? 'bg-[#FF5C00]' : 'bg-gray-200 dark:bg-slate-700'}`}>
+                                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
+                            </div>
                         </div>
                     </div>
                 </div>
