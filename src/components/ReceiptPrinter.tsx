@@ -25,13 +25,23 @@ export const ReceiptPrinter: React.FC<ReceiptPrinterProps> = ({ order, settings,
   if (!order) return null;
 
   return (
-    <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:z-[9999] print:overflow-y-auto">
+    <div className="hidden print:block">
       <style>
         {`
           @media print {
             @page { margin: 0; size: auto; }
-            body > *:not(#receipt-root-container) { display: none !important; }
-            #receipt-root-container { display: block !important; }
+            body * {
+              visibility: hidden;
+            }
+            #receipt-root-container, #receipt-root-container * {
+              visibility: visible;
+            }
+            #receipt-root-container {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
           }
         `}
       </style>
