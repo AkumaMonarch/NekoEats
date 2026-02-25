@@ -1,148 +1,81 @@
 -- Enable UUID extension
-create extension if not exists "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create Menu Items Table
-create table public.menu_items (
-  id uuid default uuid_generate_v4() primary key,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  name text not null,
-  description text,
-  price numeric not null,
-  image_url text,
-  category text not null, -- 'burgers', 'sides', 'drinks', 'desserts'
-  popular boolean default false,
-  in_stock boolean default true,
-  variants jsonb default '[]'::jsonb, -- Array of {id, name, price}
-  addons jsonb default '[]'::jsonb -- Array of {id, name, price}
+-- Create orders table
+CREATE TABLE IF NOT EXISTS orders (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_code TEXT NOT NULL,
+  customer_name TEXT NOT NULL,
+  customer_phone TEXT NOT NULL,
+  total NUMERIC(10, 2) NOT NULL,
+  status TEXT NOT NULL DEFAULT 'awaiting_confirmation',
+  payment_method TEXT NOT NULL,
+  service_option TEXT NOT NULL,
+  delivery_address TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create Orders Table
-create table public.orders (
-  id uuid default uuid_generate_v4() primary key,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  order_code text not null, -- Short code for kitchen display
-  customer_name text not null,
-  customer_phone text not null,
-  total numeric not null,
-  status text default 'pending' not null, -- 'pending', 'preparing', 'ready', 'completed', 'cancelled'
-  payment_method text default 'cash',
-  service_option text default 'delivery',
-  delivery_address text,
-  notes text
+-- Create order_items table
+CREATE TABLE IF NOT EXISTS order_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+  menu_item_id UUID, -- Can be null if item is deleted later, but we keep the record
+  name TEXT NOT NULL,
+  quantity INTEGER NOT NULL,
+  price NUMERIC(10, 2) NOT NULL,
+  selected_variant JSONB,
+  selected_addons JSONB,
+  instructions TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create Order Items Table (to normalize data, though JSONB in orders is also an option for simple apps)
-create table public.order_items (
-  id uuid default uuid_generate_v4() primary key,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  order_id uuid references public.orders(id) on delete cascade not null,
-  menu_item_id uuid references public.menu_items(id) on delete set null, -- Set to null if item is deleted
-  name text not null, -- Snapshot of name at time of order
-  quantity integer not null,
-  price numeric not null, -- Snapshot of price at time of order
-  selected_variant jsonb, -- {id, name, price}
-  selected_addons jsonb, -- Array of {id, name, price}
-  instructions text
-);
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 
--- Enable Row Level Security
-alter table public.menu_items enable row level security;
-alter table public.orders enable row level security;
-alter table public.order_items enable row level security;
+-- Enable Row Level Security (RLS)
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 
--- Policies for Menu Items
-create policy "Menu items are viewable by everyone" 
-  on public.menu_items for select 
-  using (true);
+-- Create policies (Adjust these based on your auth requirements)
+-- For now, allowing public insert for orders (since customers place them)
+-- and authenticated read/update for admin
 
-create policy "Menu items are insertable by authenticated users only" 
-  on public.menu_items for insert 
-  with check (auth.role() = 'authenticated');
+-- Policy: Anyone can create an order
+CREATE POLICY "Anyone can create an order" ON orders
+  FOR INSERT WITH CHECK (true);
 
-create policy "Menu items are updatable by authenticated users only" 
-  on public.menu_items for update 
-  using (auth.role() = 'authenticated');
+-- Policy: Anyone can create order items (linked to their order)
+CREATE POLICY "Anyone can create order items" ON order_items
+  FOR INSERT WITH CHECK (true);
 
-create policy "Menu items are deletable by authenticated users only" 
-  on public.menu_items for delete 
-  using (auth.role() = 'authenticated');
+-- Policy: Only authenticated users (admin) can view all orders
+-- Note: In a real app, you might want to restrict this further
+CREATE POLICY "Authenticated users can view orders" ON orders
+  FOR SELECT USING (auth.role() = 'authenticated');
 
--- Policies for Orders
--- Anyone can create an order (public checkout)
-create policy "Orders are insertable by everyone" 
-  on public.orders for insert 
-  with check (true);
+CREATE POLICY "Authenticated users can view order items" ON order_items
+  FOR SELECT USING (auth.role() = 'authenticated');
 
--- Allow everyone to view orders (needed for returning data after insert)
-create policy "Orders are viewable by everyone" 
-  on public.orders for select 
-  using (true);
+-- Policy: Only authenticated users (admin) can update orders
+CREATE POLICY "Authenticated users can update orders" ON orders
+  FOR UPDATE USING (auth.role() = 'authenticated');
 
--- Only authenticated users (admins) can update orders
-create policy "Orders are updatable by authenticated users only" 
-  on public.orders for update 
-  using (auth.role() = 'authenticated');
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
 
--- Policies for Order Items
-create policy "Order items are insertable by everyone" 
-  on public.order_items for insert 
-  with check (true);
-
-create policy "Order items are viewable by everyone" 
-  on public.order_items for select 
-  using (true);
-
--- Seed Data (Optional - run this if you want initial data)
-insert into public.menu_items (name, description, price, image_url, category, popular, in_stock, variants, addons) values
-(
-  'The Smoky Texas Stack', 
-  'Double beef patty, smoked brisket, cheddar, onion rings, BBQ sauce.', 
-  16.50, 
-  'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', 
-  'burgers', 
-  true, 
-  true, 
-  '[{"id": "v1", "name": "Single Patty", "price": 14.50}, {"id": "v2", "name": "Double Patty", "price": 16.50}]'::jsonb,
-  '[{"id": "a1", "name": "Extra Cheese", "price": 1.50}, {"id": "a2", "name": "Bacon", "price": 2.00}]'::jsonb
-),
-(
-  'Signature Wagyu', 
-  'Premium wagyu beef, truffle aioli, arugula, brioche bun.', 
-  18.50, 
-  'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', 
-  'burgers', 
-  true, 
-  true, 
-  '[]'::jsonb,
-  '[{"id": "a1", "name": "Extra Cheese", "price": 1.50}, {"id": "a3", "name": "Fried Egg", "price": 1.50}]'::jsonb
-),
-(
-  'Truffle Parmesan Fries', 
-  'Crispy fries tossed in truffle oil and parmesan cheese.', 
-  7.50, 
-  'https://images.unsplash.com/photo-1573080496987-a199f8cd75ec?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', 
-  'sides', 
-  true, 
-  true, 
-  '[]'::jsonb, 
-  '[]'::jsonb
-),
-(
-  'Handcrafted Lemonade', 
-  'Freshly squeezed lemons with a hint of mint.', 
-  4.50, 
-  'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', 
-  'drinks', 
-  false, 
-  true, 
-  '[]'::jsonb, 
-  '[]'::jsonb
-);
-
--- MIGRATION: If you already created the tables without ON DELETE SET NULL, run this:
--- alter table public.order_items 
--- drop constraint order_items_menu_item_id_fkey,
--- add constraint order_items_menu_item_id_fkey 
---   foreign key (menu_item_id) 
---   references public.menu_items(id) 
---   on delete set null;
+-- Trigger for orders
+DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
+CREATE TRIGGER update_orders_updated_at
+    BEFORE UPDATE ON orders
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

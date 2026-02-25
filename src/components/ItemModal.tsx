@@ -72,7 +72,7 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                     <div className="absolute bottom-4 left-6 right-6">
                         <h2 className="text-3xl font-black text-white leading-tight mb-1">{item.name}</h2>
                         <span className="text-white/90 font-bold text-xl">
-                            Rs {basePrice.toFixed(0)}
+                            Rs {basePrice.toFixed(2)}
                         </span>
                     </div>
                 </div>
@@ -112,7 +112,7 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                                         </div>
                                         <span className="font-bold text-slate-900 dark:text-white">{variant.name}</span>
                                     </div>
-                                    <span className="text-sm font-bold text-slate-900 dark:text-white">Rs {variant.price.toFixed(0)}</span>
+                                    <span className="text-sm font-bold text-slate-900 dark:text-white">Rs {variant.price.toFixed(2)}</span>
                                 </label>
                             ))}
                         </div>
@@ -139,7 +139,7 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                                             </div>
                                             <span className="text-slate-900 dark:text-white font-bold">{addon.name}</span>
                                         </div>
-                                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400">+ Rs {addon.price.toFixed(0)}</span>
+                                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400">+ Rs {addon.price.toFixed(2)}</span>
                                     </label>
                                 );
                             })}
@@ -186,7 +186,7 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                     >
                         <span className="text-lg uppercase tracking-wider">Add</span>
                         <span className="text-lg opacity-50">•</span>
-                        <span className="text-lg">Rs {totalPrice.toFixed(0)}</span>
+                        <span className="text-lg">Rs {totalPrice.toFixed(2)}</span>
                     </button>
                 </div>
             </div>

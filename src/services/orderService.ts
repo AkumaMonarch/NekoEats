@@ -11,11 +11,10 @@ export const orderService = {
     service_option: string;
     delivery_address?: string;
     notes?: string;
-    webhookUrl?: string;
   }) {
     // 1. Create Order
     const orderCode = '#' + Math.floor(100 + Math.random() * 900).toString(); // Simple 3 digit code
-    const initialStatus = order.webhookUrl ? 'awaiting_confirmation' : 'pending';
+    const initialStatus = 'awaiting_confirmation';
     
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
@@ -28,7 +27,8 @@ export const orderService = {
         payment_method: order.payment_method,
         service_option: order.service_option,
         delivery_address: order.delivery_address,
-        notes: order.notes
+        notes: order.notes,
+        items: order.items // Save full items details as JSONB
       })
       .select()
       .single();
@@ -52,24 +52,6 @@ export const orderService = {
       .insert(orderItems);
 
     if (itemsError) throw itemsError;
-
-    // 3. Trigger Webhook if configured
-    if (order.webhookUrl) {
-        try {
-            // Send the complete order data including items
-            await fetch(order.webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...orderData,
-                    items: order.items // Send the original items structure which is richer
-                })
-            });
-        } catch (error) {
-            console.error('Failed to trigger webhook:', error);
-            // We don't throw here because the order was created successfully
-        }
-    }
 
     return orderData;
   },

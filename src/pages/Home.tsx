@@ -153,7 +153,7 @@ export default function Home() {
                         </div>
                         <div className="px-3 pt-3">
                             <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">{item.name.toUpperCase()}</h4>
-                            <p className="text-primary font-bold text-sm mt-1">${item.price.toFixed(2)}</p>
+                            <p className="text-primary font-bold text-sm mt-1">Rs {item.price.toFixed(2)}</p>
                         </div>
                     </Link>
                 ))}

@@ -291,12 +291,12 @@ export default function AdminOrders() {
                                                 </div>
                                             )}
                                         </div>
-                                        <span className="font-bold text-slate-400">${item.price.toFixed(2)}</span>
+                                        <span className="font-bold text-slate-400">Rs {item.price.toFixed(2)}</span>
                                     </div>
                                 ))}
                                 <div className="flex justify-between items-center pt-4 border-t border-dashed border-gray-200 dark:border-white/10">
                                     <span className="font-bold text-sm">TOTAL</span>
-                                    <span className="font-black text-lg text-primary">${order.total.toFixed(2)}</span>
+                                    <span className="font-black text-lg text-primary">Rs {order.total.toFixed(2)}</span>
                                 </div>
                             </div>
 

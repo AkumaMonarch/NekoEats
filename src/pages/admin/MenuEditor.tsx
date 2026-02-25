@@ -183,7 +183,7 @@ export default function AdminMenu() {
                                     <div className={!item.in_stock ? 'opacity-60' : ''}>
                                         <h4 className="text-[15px] font-bold leading-snug line-clamp-1">{item.name}</h4>
                                         <p className="text-[13px] font-medium text-primary mt-0.5">
-                                            ${item.price.toFixed(2)} 
+                                            Rs {item.price.toFixed(2)} 
                                             <span className="text-slate-400 dark:text-white/30 mx-1.5">/</span> 
                                             <span className="text-slate-500 capitalize">{item.category}</span>
                                         </p>

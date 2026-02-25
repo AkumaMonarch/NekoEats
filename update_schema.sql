@@ -1,6 +1,6 @@
--- Add webhook_url column to store_settings table
-ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS webhook_url text;
+-- Add items column to orders table to store full order details as JSON
+-- This makes it easier for n8n to get all details in a single trigger
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS items JSONB;
 
--- Ensure other columns exist as well, just in case
-ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS business_phone text;
-ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS logo_url text;
+-- Update existing orders to have empty items array if null (optional)
+UPDATE orders SET items = '[]'::jsonb WHERE items IS NULL;

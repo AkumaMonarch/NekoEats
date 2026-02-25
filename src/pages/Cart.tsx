@@ -67,8 +67,7 @@ export default function Cart() {
             payment_method: paymentMethod,
             service_option: serviceOption,
             delivery_address: contact.address,
-            notes: contact.notes,
-            webhookUrl: settings?.webhook_url
+            notes: contact.notes
         });
 
         setOrderCode(order.order_code);
@@ -109,9 +108,7 @@ export default function Cart() {
                 </div>
             )}
             <p className="text-lg text-slate-500 dark:text-gray-400 mb-8 max-w-xs mx-auto">
-                {settings?.webhook_url 
-                    ? "You will receive a WhatsApp confirmation shortly." 
-                    : "Thank you for your order!"}
+                You will receive a confirmation shortly.
             </p>
             <Link to="/" className="bg-gray-100 dark:bg-white/10 text-slate-900 dark:text-white font-bold px-8 py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">
                 Back to Home
@@ -214,7 +211,7 @@ export default function Cart() {
                                                 <span className="text-primary mr-1">{item.quantity}x</span>
                                                 {item.name}
                                             </h3>
-                                            <p className="text-sm font-bold text-slate-900 dark:text-white">${((item.selectedVariant?.price || item.price) * item.quantity).toFixed(2)}</p>
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white">Rs {((item.selectedVariant?.price || item.price) * item.quantity).toFixed(2)}</p>
                                         </div>
                                         <p className="text-[11px] text-slate-500 dark:text-gray-400 line-clamp-1">
                                             {item.selectedVariant?.name}
@@ -227,15 +224,15 @@ export default function Cart() {
                         <div className="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-white/10 space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-500 dark:text-gray-400">Subtotal</span>
-                                <span className="font-semibold text-slate-900 dark:text-white">${cartTotal.toFixed(2)}</span>
+                                <span className="font-semibold text-slate-900 dark:text-white">Rs {cartTotal.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-500 dark:text-gray-400">Delivery Fee</span>
-                                <span className="font-semibold text-slate-900 dark:text-white">${deliveryFee.toFixed(2)}</span>
+                                <span className="font-semibold text-slate-900 dark:text-white">Rs {deliveryFee.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between items-end pt-2">
                                 <span className="text-sm font-bold text-slate-900 dark:text-white">Total</span>
-                                <span className="text-xl font-black text-primary">${finalTotal.toFixed(2)}</span>
+                                <span className="text-xl font-black text-primary">Rs {finalTotal.toFixed(2)}</span>
                             </div>
                         </div>
                     </section>
@@ -358,7 +355,7 @@ export default function Cart() {
                 <div className="max-w-md mx-auto space-y-3">
                     <div className="flex justify-between px-2">
                         <span className="text-slate-500 font-medium">Total</span>
-                        <span className="text-slate-900 dark:text-white font-bold text-lg">${finalTotal.toFixed(2)}</span>
+                        <span className="text-slate-900 dark:text-white font-bold text-lg">Rs {finalTotal.toFixed(2)}</span>
                     </div>
                     <button 
                         onClick={() => setStep('review')}
@@ -415,7 +412,7 @@ export default function Cart() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-start">
                                     <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{item.name}</h3>
-                                    <p className="text-sm font-bold text-primary">${((item.selectedVariant?.price || item.price) + item.selectedAddons.reduce((s, a) => s + a.price, 0)).toFixed(2)}</p>
+                                    <p className="text-sm font-bold text-primary">Rs {((item.selectedVariant?.price || item.price) + item.selectedAddons.reduce((s, a) => s + a.price, 0)).toFixed(2)}</p>
                                 </div>
                                 <p className="text-[11px] text-slate-500 dark:text-gray-400 mt-1 line-clamp-1">
                                     {item.selectedVariant?.name}
@@ -553,16 +550,16 @@ export default function Cart() {
                 <section className="bg-white dark:bg-white/5 rounded-2xl p-5 space-y-3 border border-gray-100 dark:border-white/5 shadow-sm">
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-500 dark:text-gray-400">Subtotal</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">${cartTotal.toFixed(2)}</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">Rs {cartTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-500 dark:text-gray-400">Delivery Fee</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">${deliveryFee.toFixed(2)}</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">Rs {deliveryFee.toFixed(2)}</span>
                     </div>
                     <div className="pt-4 border-t border-dashed border-gray-200 dark:border-white/10 flex justify-between items-end">
                         <div>
                             <p className="text-xs text-gray-400 uppercase tracking-tighter font-bold">Total Amount</p>
-                            <p className="text-3xl font-black text-primary">${finalTotal.toFixed(2)}</p>
+                            <p className="text-3xl font-black text-primary">Rs {finalTotal.toFixed(2)}</p>
                         </div>
                     </div>
                 </section>
@@ -588,7 +585,7 @@ export default function Cart() {
                         >
                             <span className="text-lg">{hasScrolledBottom ? "Place Order" : "Scroll to Continue"}</span>
                             <span className="h-5 w-px bg-white/30 mx-2"></span>
-                            <span className="text-lg">${finalTotal.toFixed(2)}</span>
+                            <span className="text-lg">Rs {finalTotal.toFixed(2)}</span>
                         </button>
                         <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-wider">Verification will follow on the next screen</p>
                     </div>

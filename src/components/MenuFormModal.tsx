@@ -167,7 +167,7 @@ export function MenuFormModal({ isOpen, onClose, onSuccess, itemToEdit }: MenuFo
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Price ($)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Price (Rs)</label>
                   <input
                     type="number"
                     step="0.01"
