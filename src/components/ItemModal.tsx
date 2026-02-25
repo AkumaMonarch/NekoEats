@@ -94,8 +94,9 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                         </div>
                         <div className="space-y-3">
                             {item.variants.map((variant) => (
-                                <label 
+                                <div 
                                     key={variant.id}
+                                    onClick={() => setSelectedVariant(variant)}
                                     className={cn(
                                         "flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all active:scale-[0.99]",
                                         selectedVariant?.id === variant.id 
@@ -113,7 +114,7 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                                         <span className="font-bold text-slate-900 dark:text-white">{variant.name}</span>
                                     </div>
                                     <span className="text-sm font-bold text-slate-900 dark:text-white">Rs {variant.price.toFixed(2)}</span>
-                                </label>
+                                </div>
                             ))}
                         </div>
                     </div>

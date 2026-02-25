@@ -56,7 +56,7 @@ export const orderService = {
     return orderData;
   },
 
-  async getOrders(status?: string) {
+  async getOrders(status?: string, searchQuery?: string) {
     let query = supabase
       .from('orders')
       .select(`
@@ -65,13 +65,21 @@ export const orderService = {
       `)
       .order('created_at', { ascending: false });
 
-    if (status && status !== 'all') {
-      query = query.eq('status', status);
+    // If there is a search query, search across ALL orders regardless of status
+    if (searchQuery) {
+      // Search by order code, customer name, or phone
+      // Note: We use ilike for case-insensitive search
+      query = query.or(`order_code.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%,customer_phone.ilike.%${searchQuery}%`);
     } else {
-      // By default, exclude awaiting_confirmation AND cancelled orders from the main list
-      // This keeps the "All" view focused on valid orders (active + completed)
-      query = query.neq('status', 'awaiting_confirmation');
-      query = query.neq('status', 'cancelled');
+      // Normal filtering logic when NOT searching
+      if (status && status !== 'all') {
+        query = query.eq('status', status);
+      } else {
+        // By default, exclude awaiting_confirmation AND cancelled orders from the main list
+        // This keeps the "All" view focused on valid orders (active + completed)
+        query = query.neq('status', 'awaiting_confirmation');
+        query = query.neq('status', 'cancelled');
+      }
     }
 
     const { data, error } = await query;

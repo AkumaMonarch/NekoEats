@@ -48,12 +48,12 @@ export default function AdminOrders() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [activeTab]);
+  }, [activeTab, searchQuery]);
 
   const fetchOrders = async () => {
     try {
       const [ordersData, countsData] = await Promise.all([
-        orderService.getOrders(activeTab === 'all' ? undefined : activeTab),
+        orderService.getOrders(activeTab === 'all' ? undefined : activeTab, searchQuery),
         orderService.getOrderCounts()
       ]);
       setOrders(ordersData as any[]);
@@ -85,15 +85,7 @@ export default function AdminOrders() {
     }
   };
 
-  const filteredOrders = orders.filter(order => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-        order.customer_name.toLowerCase().includes(query) ||
-        order.order_code.toLowerCase().includes(query) ||
-        order.customer_phone.includes(query)
-    );
-  });
+  const filteredOrders = orders; // Filtering is now handled by the API/Supabase query
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-[#0c0605] text-slate-900 dark:text-white">
