@@ -67,6 +67,10 @@ export const orderService = {
 
     if (status && status !== 'all') {
       query = query.eq('status', status);
+    } else {
+      // By default, exclude awaiting_confirmation orders from the main list
+      // as they are not yet confirmed by the customer
+      query = query.neq('status', 'awaiting_confirmation');
     }
 
     const { data, error } = await query;

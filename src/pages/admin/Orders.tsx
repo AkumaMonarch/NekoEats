@@ -4,6 +4,8 @@ import { orderService } from '../../services/orderService';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '../../lib/supabase';
 import { useDraggableScroll } from '../../hooks/useDraggableScroll';
+import { ReceiptPrinter } from '../../components/ReceiptPrinter';
+import { useStoreSettings } from '../../hooks/useStoreSettings';
 
 interface Order {
   id: string;
@@ -14,6 +16,10 @@ interface Order {
   status: string;
   created_at: string;
   order_items: any[];
+  service_option: string;
+  delivery_address?: string;
+  notes?: string;
+  payment_method: string;
 }
 
 export default function AdminOrders() {
@@ -23,6 +29,8 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
+  const { settings } = useStoreSettings();
   
   const scrollRef = useDraggableScroll();
 
@@ -133,13 +141,13 @@ export default function AdminOrders() {
             ref={scrollRef}
             className="flex gap-2 overflow-x-auto hide-scrollbar cursor-grab select-none"
         >
-            {['All', 'Pending', 'Preparing', 'Ready', 'Completed'].map((tab) => (
+            {['All', 'Received', 'Preparing', 'Ready', 'Completed'].map((tab) => (
                 <button
                     key={tab}
-                    onClick={() => setActiveTab(tab.toLowerCase())}
+                    onClick={() => setActiveTab(tab === 'Received' ? 'pending' : tab.toLowerCase())}
                     className={cn(
                         "px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors",
-                        activeTab === tab.toLowerCase()
+                        (activeTab === 'pending' && tab === 'Received') || activeTab === tab.toLowerCase()
                             ? "bg-primary text-white shadow-lg shadow-primary/20"
                             : "bg-gray-100 dark:bg-white/5 text-slate-500 dark:text-slate-400"
                     )}
@@ -211,8 +219,8 @@ export default function AdminOrders() {
                             {/* Status Tracker */}
                             <div className="flex justify-between items-center py-6 px-2 relative">
                                 <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 dark:bg-white/10 -z-10 -translate-y-1/2"></div>
-                                {['awaiting_confirmation', 'pending', 'preparing', 'ready', 'completed'].map((step, idx) => {
-                                    const steps = ['awaiting_confirmation', 'pending', 'preparing', 'ready', 'completed'];
+                                {['pending', 'preparing', 'ready', 'completed'].map((step, idx) => {
+                                    const steps = ['pending', 'preparing', 'ready', 'completed'];
                                     const currentIdx = steps.indexOf(order.status);
                                     // If order status is not in the list (e.g. cancelled), handle gracefully
                                     if (currentIdx === -1 && order.status !== 'cancelled') return null;
@@ -221,31 +229,34 @@ export default function AdminOrders() {
                                     const isActive = stepIdx <= currentIdx;
                                     const isCurrent = stepIdx === currentIdx;
 
-                                    // Skip awaiting_confirmation in the UI if the order started at pending (legacy or no webhook)
-                                    // But if the order IS awaiting_confirmation, we must show it.
-                                    // Actually, let's just show all steps for consistency, or maybe hide awaiting_confirmation if it's already passed?
-                                    // For simplicity, let's show all.
+                                    let label = step;
+                                    if (step === 'pending') label = 'Received';
+                                    if (step === 'preparing') label = 'In Kitchen';
+                                    if (step === 'ready') label = 'Ready';
+                                    if (step === 'completed') label = 'Done';
                                     
                                     return (
                                         <div key={step} className="flex flex-col items-center gap-2 bg-white dark:bg-[#160e0c] px-1 z-10">
                                             <div className={cn(
-                                                "h-8 w-8 rounded-full flex items-center justify-center relative transition-colors",
-                                                isActive ? "bg-primary text-white" : "bg-gray-200 dark:bg-white/10 text-slate-400"
+                                                "h-8 w-8 rounded-full flex items-center justify-center relative transition-all duration-500",
+                                                isActive ? "bg-primary text-white" : "bg-gray-200 dark:bg-white/10 text-slate-400",
+                                                isCurrent && "ring-4 ring-primary/20 shadow-[0_0_15px_rgba(238,91,43,0.5)] scale-110"
                                             )}>
+                                                {isCurrent && (
+                                                    <span className="absolute inset-0 rounded-full border-2 border-white/20 animate-ping"></span>
+                                                )}
                                                 <span className="material-symbols-outlined text-sm">
-                                                    {step === 'awaiting_confirmation' && 'hourglass_empty'}
                                                     {step === 'pending' && 'receipt_long'}
                                                     {step === 'preparing' && 'skillet'}
                                                     {step === 'ready' && 'check'}
                                                     {step === 'completed' && 'done_all'}
                                                 </span>
-                                                {isCurrent && <span className="absolute -top-1 -right-1 h-3 w-3 bg-blue-500 rounded-full border border-[#160e0c]"></span>}
                                             </div>
                                             <span className={cn(
-                                                "text-[9px] font-bold uppercase",
+                                                "text-[9px] font-bold uppercase transition-colors duration-300",
                                                 isActive ? "text-primary" : "text-slate-400"
                                             )}>
-                                                {step === 'awaiting_confirmation' ? 'Confirming' : step}
+                                                {label}
                                             </span>
                                         </div>
                                     );
@@ -303,7 +314,14 @@ export default function AdminOrders() {
                             {/* Footer Actions */}
                             {order.status !== 'completed' && order.status !== 'cancelled' && (
                                 <div className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button 
+                                            onClick={() => setPrintingOrder(order)}
+                                            className="py-3 rounded-xl border border-gray-200 dark:border-white/10 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5"
+                                        >
+                                            <span className="material-symbols-outlined text-lg">print</span>
+                                            PRINT
+                                        </button>
                                         <button className="py-3 rounded-xl border border-gray-200 dark:border-white/10 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5">
                                             <span className="material-symbols-outlined text-lg">edit_note</span>
                                             EDIT
@@ -317,15 +335,6 @@ export default function AdminOrders() {
                                         </button>
                                     </div>
                                     
-                                    {order.status === 'awaiting_confirmation' && (
-                                        <button 
-                                            onClick={() => handleStatusUpdate(order.id, 'pending')}
-                                            className="w-full py-4 rounded-xl bg-blue-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
-                                        >
-                                            MANUAL CONFIRM
-                                            <span className="material-symbols-outlined text-lg">check</span>
-                                        </button>
-                                    )}
                                     {order.status === 'pending' && (
                                         <button 
                                             onClick={() => handleStatusUpdate(order.id, 'preparing')}
@@ -361,6 +370,12 @@ export default function AdminOrders() {
             ))
         )}
       </main>
+      
+      <ReceiptPrinter 
+        order={printingOrder} 
+        settings={settings} 
+        onAfterPrint={() => setPrintingOrder(null)} 
+      />
     </div>
   );
 }
