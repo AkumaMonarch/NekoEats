@@ -68,9 +68,10 @@ export const orderService = {
     if (status && status !== 'all') {
       query = query.eq('status', status);
     } else {
-      // By default, exclude awaiting_confirmation orders from the main list
-      // as they are not yet confirmed by the customer
+      // By default, exclude awaiting_confirmation AND cancelled orders from the main list
+      // This keeps the "All" view focused on valid orders (active + completed)
       query = query.neq('status', 'awaiting_confirmation');
+      query = query.neq('status', 'cancelled');
     }
 
     const { data, error } = await query;
@@ -85,5 +86,49 @@ export const orderService = {
       .eq('id', id);
 
     if (error) throw error;
+  },
+
+  async updateOrderDetails(id: string, updates: Partial<Order>) {
+    const { error } = await supabase
+      .from('orders')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async getOrderHistory(orderId: string) {
+    const { data, error } = await supabase
+      .from('order_status_history')
+      .select('*')
+      .eq('order_id', orderId)
+      .order('changed_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getOrderCounts() {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('status');
+
+    if (error) throw error;
+
+    const counts = {
+      pending: 0,
+      preparing: 0,
+      ready: 0,
+      completed: 0,
+      cancelled: 0
+    };
+
+    data?.forEach((order: any) => {
+      if (order.status in counts) {
+        counts[order.status as keyof typeof counts]++;
+      }
+    });
+
+    return counts;
   }
 };

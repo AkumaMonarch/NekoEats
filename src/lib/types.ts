@@ -79,4 +79,7 @@ export interface Order {
   status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'awaiting_confirmation';
   created_at: string;
   payment_method: 'cash' | 'card';
+  service_option: string;
+  delivery_address?: string;
+  notes?: string;
 }

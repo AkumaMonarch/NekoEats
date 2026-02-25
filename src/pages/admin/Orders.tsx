@@ -6,20 +6,11 @@ import { supabase } from '../../lib/supabase';
 import { useDraggableScroll } from '../../hooks/useDraggableScroll';
 import { ReceiptPrinter } from '../../components/ReceiptPrinter';
 import { useStoreSettings } from '../../hooks/useStoreSettings';
+import OrderStatusHistoryModal from '../../components/OrderStatusHistoryModal';
+import { Order as BaseOrder } from '../../lib/types';
 
-interface Order {
-  id: string;
-  order_code: string;
-  customer_name: string;
-  customer_phone: string;
-  total: number;
-  status: string;
-  created_at: string;
+interface Order extends Omit<BaseOrder, 'items'> {
   order_items: any[];
-  service_option: string;
-  delivery_address?: string;
-  notes?: string;
-  payment_method: string;
 }
 
 export default function AdminOrders() {
@@ -30,6 +21,14 @@ export default function AdminOrders() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
+  const [historyOrder, setHistoryOrder] = useState<Order | null>(null);
+  const [orderCounts, setOrderCounts] = useState({
+    pending: 0,
+    preparing: 0,
+    ready: 0,
+    completed: 0,
+    cancelled: 0
+  });
   const { settings } = useStoreSettings();
   
   const scrollRef = useDraggableScroll();
@@ -53,8 +52,12 @@ export default function AdminOrders() {
 
   const fetchOrders = async () => {
     try {
-      const data = await orderService.getOrders(activeTab === 'all' ? undefined : activeTab);
-      setOrders(data as any[]);
+      const [ordersData, countsData] = await Promise.all([
+        orderService.getOrders(activeTab === 'all' ? undefined : activeTab),
+        orderService.getOrderCounts()
+      ]);
+      setOrders(ordersData as any[]);
+      setOrderCounts(countsData);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
     } finally {
@@ -68,6 +71,17 @@ export default function AdminOrders() {
         fetchOrders(); // Refresh list
     } catch (error) {
         console.error('Failed to update status:', error);
+    }
+  };
+
+  const handleRevertStatus = async (id: string, status: string) => {
+    try {
+      await orderService.updateOrderStatus(id, status);
+      fetchOrders();
+      setHistoryOrder(null);
+    } catch (error) {
+      console.error('Failed to revert status:', error);
+      alert('Failed to revert status');
     }
   };
 
@@ -141,20 +155,35 @@ export default function AdminOrders() {
             ref={scrollRef}
             className="flex gap-2 overflow-x-auto hide-scrollbar cursor-grab select-none"
         >
-            {['All', 'Received', 'Preparing', 'Ready', 'Completed'].map((tab) => (
-                <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab === 'Received' ? 'pending' : tab.toLowerCase())}
-                    className={cn(
-                        "px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors",
-                        (activeTab === 'pending' && tab === 'Received') || activeTab === tab.toLowerCase()
-                            ? "bg-primary text-white shadow-lg shadow-primary/20"
-                            : "bg-gray-100 dark:bg-white/5 text-slate-500 dark:text-slate-400"
-                    )}
-                >
-                    {tab}
-                </button>
-            ))}
+            {['All', 'Received', 'Preparing', 'Ready', 'Completed', 'Cancelled'].map((tab) => {
+                const statusKey = tab === 'Received' ? 'pending' : tab.toLowerCase();
+                const count = statusKey === 'all' ? 0 : orderCounts[statusKey as keyof typeof orderCounts] || 0;
+                
+                return (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(statusKey)}
+                        className={cn(
+                            "px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors flex items-center gap-2",
+                            (activeTab === 'pending' && tab === 'Received') || activeTab === tab.toLowerCase()
+                                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                : "bg-gray-100 dark:bg-white/5 text-slate-500 dark:text-slate-400"
+                        )}
+                    >
+                        {tab}
+                        {tab !== 'All' && count > 0 && (
+                            <span className={cn(
+                                "h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center text-[10px]",
+                                (activeTab === 'pending' && tab === 'Received') || activeTab === tab.toLowerCase()
+                                    ? "bg-white text-primary"
+                                    : "bg-gray-200 dark:bg-white/10 text-slate-600 dark:text-slate-300"
+                            )}>
+                                {count}
+                            </span>
+                        )}
+                    </button>
+                );
+            })}
         </div>
       </header>
 
@@ -322,9 +351,12 @@ export default function AdminOrders() {
                                             <span className="material-symbols-outlined text-lg">print</span>
                                             PRINT
                                         </button>
-                                        <button className="py-3 rounded-xl border border-gray-200 dark:border-white/10 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5">
-                                            <span className="material-symbols-outlined text-lg">edit_note</span>
-                                            EDIT
+                                        <button 
+                                            onClick={() => setHistoryOrder(order)}
+                                            className="py-3 rounded-xl border border-gray-200 dark:border-white/10 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5"
+                                        >
+                                            <span className="material-symbols-outlined text-lg">history</span>
+                                            HISTORY
                                         </button>
                                         <button 
                                             onClick={() => handleStatusUpdate(order.id, 'cancelled')}
@@ -376,6 +408,15 @@ export default function AdminOrders() {
         settings={settings} 
         onAfterPrint={() => setPrintingOrder(null)} 
       />
+
+      {historyOrder && (
+        <OrderStatusHistoryModal
+          order={historyOrder}
+          isOpen={!!historyOrder}
+          onClose={() => setHistoryOrder(null)}
+          onRevert={handleRevertStatus}
+        />
+      )}
     </div>
   );
 }
