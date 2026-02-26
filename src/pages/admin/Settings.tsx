@@ -24,7 +24,11 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [isClosedDatesOpen, setIsClosedDatesOpen] = useState(false);
+  const [isServiceOptionsOpen, setIsServiceOptionsOpen] = useState(false);
   const [isBrandingOpen, setIsBrandingOpen] = useState(true);
+  const [newClosedDate, setNewClosedDate] = useState('');
+  const [newClosedReason, setNewClosedReason] = useState('');
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -38,12 +42,37 @@ export default function AdminSettings() {
       if (data && !data.schedule) {
         data.schedule = defaultSchedule;
       }
+      // Ensure closed_dates exists
+      if (data && !data.closed_dates) {
+        data.closed_dates = [];
+      }
       setSettings(data);
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddClosedDate = () => {
+    if (!newClosedDate || !settings) return;
+    
+    const newDate = { date: newClosedDate, reason: newClosedReason };
+    const updatedDates = [...(settings.closed_dates || []), newDate];
+    
+    // Sort dates chronologically
+    updatedDates.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    setSettings({ ...settings, closed_dates: updatedDates });
+    setNewClosedDate('');
+    setNewClosedReason('');
+  };
+
+  const handleRemoveClosedDate = (index: number) => {
+    if (!settings) return;
+    const updatedDates = [...(settings.closed_dates || [])];
+    updatedDates.splice(index, 1);
+    setSettings({ ...settings, closed_dates: updatedDates });
   };
 
   const handleScheduleChange = (day: keyof WeeklySchedule, field: keyof DaySchedule, value: any) => {
@@ -268,6 +297,127 @@ export default function AdminSettings() {
                         )}
                     </div>
                 ))}
+            </div>
+        </section>
+
+        <section>
+            <div 
+                onClick={() => setIsClosedDatesOpen(!isClosedDatesOpen)}
+                className="flex justify-between items-center mb-4 cursor-pointer"
+            >
+                <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Holiday / Closed Dates</h2>
+                <span className={`material-symbols-outlined text-slate-400 transition-transform ${isClosedDatesOpen ? 'rotate-180' : ''}`}>expand_more</span>
+            </div>
+            
+            <div className={`bg-white dark:bg-[#1e1411] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${isClosedDatesOpen ? 'max-h-[500px] opacity-100 p-4' : 'max-h-0 opacity-0 border-none'}`}>
+                <div className="space-y-4">
+                    <div className="flex gap-2">
+                        <div className="flex-1">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Date</label>
+                            <input 
+                                type="date" 
+                                value={newClosedDate}
+                                onChange={(e) => setNewClosedDate(e.target.value)}
+                                className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium text-slate-900 dark:text-white dark:[color-scheme:dark]"
+                            />
+                        </div>
+                        <div className="flex-[2]">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Reason (Optional)</label>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={newClosedReason}
+                                    onChange={(e) => setNewClosedReason(e.target.value)}
+                                    placeholder="e.g. Public Holiday"
+                                    className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium"
+                                />
+                                <button 
+                                    onClick={handleAddClosedDate}
+                                    disabled={!newClosedDate}
+                                    className="bg-primary text-white h-11 w-11 rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+                                >
+                                    <span className="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {settings?.closed_dates && settings.closed_dates.length > 0 ? (
+                        <div className="space-y-2 mt-4">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Upcoming Closed Dates</label>
+                            {settings.closed_dates.map((date, index) => (
+                                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
+                                    <div>
+                                        <p className="font-bold text-sm text-slate-900 dark:text-white">
+                                            {new Date(date.date).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                                        </p>
+                                        {date.reason && (
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{date.reason}</p>
+                                        )}
+                                    </div>
+                                    <button 
+                                        onClick={() => handleRemoveClosedDate(index)}
+                                        className="h-8 w-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500/20 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined text-sm">delete</span>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-slate-400 italic text-center py-4">No closed dates set.</p>
+                    )}
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div 
+                onClick={() => setIsServiceOptionsOpen(!isServiceOptionsOpen)}
+                className="flex justify-between items-center mb-4 cursor-pointer"
+            >
+                <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Service Options</h2>
+                <span className={`material-symbols-outlined text-slate-400 transition-transform ${isServiceOptionsOpen ? 'rotate-180' : ''}`}>expand_more</span>
+            </div>
+            
+            <div className={`bg-white dark:bg-[#1e1411] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${isServiceOptionsOpen ? 'max-h-[300px] opacity-100 p-4' : 'max-h-0 opacity-0 border-none'}`}>
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${settings?.is_delivery_enabled ? 'bg-primary/10 text-primary' : 'bg-gray-200 dark:bg-white/10 text-slate-400'}`}>
+                                <span className="material-symbols-outlined">two_wheeler</span>
+                            </div>
+                            <div>
+                                <p className="font-bold text-sm text-slate-900 dark:text-white">Delivery</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Enable delivery orders</p>
+                            </div>
+                        </div>
+                        <div 
+                            onClick={() => setSettings(prev => prev ? ({ ...prev, is_delivery_enabled: !prev.is_delivery_enabled }) : null)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none ${settings?.is_delivery_enabled ? 'bg-primary' : 'bg-gray-200 dark:bg-slate-700'}`}
+                        >
+                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings?.is_delivery_enabled ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${settings?.is_pickup_enabled ? 'bg-primary/10 text-primary' : 'bg-gray-200 dark:bg-white/10 text-slate-400'}`}>
+                                <span className="material-symbols-outlined">shopping_bag</span>
+                            </div>
+                            <div>
+                                <p className="font-bold text-sm text-slate-900 dark:text-white">Pickup</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Enable pickup orders</p>
+                            </div>
+                        </div>
+                        <div 
+                            onClick={() => setSettings(prev => prev ? ({ ...prev, is_pickup_enabled: !prev.is_pickup_enabled }) : null)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none ${settings?.is_pickup_enabled ? 'bg-primary' : 'bg-gray-200 dark:bg-slate-700'}`}
+                        >
+                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings?.is_pickup_enabled ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 

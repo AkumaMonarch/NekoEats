@@ -164,30 +164,30 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
             </div>
 
             {/* Footer */}
-            <div className="absolute bottom-0 inset-x-0 bg-white dark:bg-[#221510] border-t border-black/5 dark:border-white/5 px-6 py-4 pb-8 sm:pb-4 z-20">
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center bg-black/5 dark:bg-white/5 rounded-2xl p-1 h-14">
+            <div className="absolute bottom-0 inset-x-0 bg-white dark:bg-[#221510] border-t border-black/5 dark:border-white/5 px-4 py-3 pb-6 sm:pb-4 z-20">
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center bg-black/5 dark:bg-white/5 rounded-xl p-1 h-10">
                         <button 
                             onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                            className="w-12 h-full flex items-center justify-center rounded-xl bg-white dark:bg-white/10 shadow-sm active:scale-90 transition-transform"
+                            className="w-8 h-full flex items-center justify-center rounded-lg bg-white dark:bg-white/10 shadow-sm active:scale-90 transition-transform"
                         >
-                            <span className="material-symbols-outlined text-xl text-slate-900 dark:text-white">remove</span>
+                            <span className="material-symbols-outlined text-base text-slate-900 dark:text-white">remove</span>
                         </button>
-                        <span className="w-12 text-center font-bold text-lg text-slate-900 dark:text-white">{quantity}</span>
+                        <span className="w-8 text-center font-bold text-sm text-slate-900 dark:text-white">{quantity}</span>
                         <button 
                             onClick={() => setQuantity(quantity + 1)}
-                            className="w-12 h-full flex items-center justify-center rounded-xl bg-white dark:bg-white/10 shadow-sm active:scale-90 transition-transform"
+                            className="w-8 h-full flex items-center justify-center rounded-lg bg-white dark:bg-white/10 shadow-sm active:scale-90 transition-transform"
                         >
-                            <span className="material-symbols-outlined text-xl text-slate-900 dark:text-white">add</span>
+                            <span className="material-symbols-outlined text-base text-slate-900 dark:text-white">add</span>
                         </button>
                     </div>
                     <button 
                         onClick={handleAddToCart}
-                        className="flex-1 bg-[#E25E3E] h-14 rounded-2xl flex items-center justify-center gap-2 px-6 text-white font-bold transition-transform active:scale-[0.98] shadow-xl shadow-[#E25E3E]/30"
+                        className="flex-1 bg-[#E25E3E] h-10 rounded-xl flex items-center justify-center gap-2 px-4 text-white font-bold transition-transform active:scale-[0.98] shadow-lg shadow-[#E25E3E]/20"
                     >
-                        <span className="text-lg uppercase tracking-wider">Add</span>
-                        <span className="text-lg opacity-50">•</span>
-                        <span className="text-lg">Rs {totalPrice.toFixed(2)}</span>
+                        <span className="text-sm uppercase tracking-wider">Add</span>
+                        <span className="text-sm opacity-50">•</span>
+                        <span className="text-sm">Rs {totalPrice.toFixed(2)}</span>
                     </button>
                 </div>
             </div>

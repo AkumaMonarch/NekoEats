@@ -24,6 +24,11 @@ export interface WeeklySchedule {
   sunday: DaySchedule;
 }
 
+export interface ClosedDate {
+  date: string;
+  reason?: string;
+}
+
 export interface StoreSettings {
   id: string;
   restaurant_name: string;
@@ -34,6 +39,9 @@ export interface StoreSettings {
   opening_time: string; // Deprecated, kept for backward compatibility if needed
   closing_time: string; // Deprecated
   schedule?: WeeklySchedule;
+  closed_dates?: ClosedDate[];
+  is_delivery_enabled?: boolean;
+  is_pickup_enabled?: boolean;
 }
 
 export interface MenuItem {
