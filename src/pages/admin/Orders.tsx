@@ -307,6 +307,7 @@ export default function AdminOrders() {
                                                     {item.selected_variant && (
                                                         <div className="text-xs text-slate-500 dark:text-slate-400">
                                                             Variant: {item.selected_variant.name}
+                                                            {item.selected_variant.price > 0 && ` (+ Rs ${item.selected_variant.price.toFixed(2)})`}
                                                         </div>
                                                     )}
                                                     {item.selected_addons && item.selected_addons.map((addon: any) => (

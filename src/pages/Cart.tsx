@@ -213,7 +213,7 @@ export default function Cart() {
                                                 <span className="text-primary mr-1">{item.quantity}x</span>
                                                 {item.name}
                                             </h3>
-                                            <p className="text-sm font-bold text-slate-900 dark:text-white">Rs {((item.selectedVariant?.price || item.price) * item.quantity).toFixed(2)}</p>
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white">Rs {(item.price * item.quantity).toFixed(2)}</p>
                                         </div>
                                         <p className="text-[11px] text-slate-500 dark:text-gray-400 line-clamp-1">
                                             {item.selectedVariant?.name}
@@ -229,9 +229,9 @@ export default function Cart() {
                                 <span className="font-semibold text-slate-900 dark:text-white">Rs {cartTotal.toFixed(2)}</span>
                             </div>
                             {settings?.vat_enabled && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-gray-400">VAT ({settings.vat_percentage}%)</span>
-                                    <span className="font-semibold text-slate-900 dark:text-white">Rs {vatAmount.toFixed(2)}</span>
+                                <div className="flex justify-between text-sm py-1">
+                                    <span className="text-slate-500 dark:text-gray-400 font-medium">VAT ({settings.vat_percentage}%)</span>
+                                    <span className="font-bold text-slate-900 dark:text-white">Rs {vatAmount.toFixed(2)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between text-sm">
@@ -420,7 +420,7 @@ export default function Cart() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-start">
                                     <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{item.name}</h3>
-                                    <p className="text-sm font-bold text-primary">Rs {((item.selectedVariant?.price || item.price) + item.selectedAddons.reduce((s, a) => s + a.price, 0)).toFixed(2)}</p>
+                                    <p className="text-sm font-bold text-primary">Rs {(item.price + item.selectedAddons.reduce((s, a) => s + a.price, 0)).toFixed(2)}</p>
                                 </div>
                                 <p className="text-[11px] text-slate-500 dark:text-gray-400 mt-1 line-clamp-1">
                                     {item.selectedVariant?.name}
@@ -561,9 +561,9 @@ export default function Cart() {
                         <span className="font-semibold text-slate-900 dark:text-white">Rs {cartTotal.toFixed(2)}</span>
                     </div>
                     {settings?.vat_enabled && (
-                        <div className="flex justify-between text-sm">
-                            <span className="text-slate-500 dark:text-gray-400">VAT ({settings.vat_percentage}%)</span>
-                            <span className="font-semibold text-slate-900 dark:text-white">Rs {vatAmount.toFixed(2)}</span>
+                        <div className="flex justify-between text-sm py-1">
+                            <span className="text-slate-500 dark:text-gray-400 font-medium">VAT ({settings.vat_percentage}%)</span>
+                            <span className="font-bold text-slate-900 dark:text-white">Rs {vatAmount.toFixed(2)}</span>
                         </div>
                     )}
                     <div className="flex justify-between text-sm">

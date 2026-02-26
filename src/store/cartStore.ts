@@ -18,7 +18,8 @@ export const useCartStore = create<CartState>()(
       items: [],
       addItem: (item, quantity, variant, addons = [], instructions = '') => {
         const cartId = uuidv4();
-        const price = variant ? variant.price : item.price;
+        // Additive pricing: Base Price + Variant Price
+        const price = item.price + (variant ? variant.price : 0);
         const addonsPrice = addons.reduce((sum, addon) => sum + addon.price, 0);
         
         // Check if identical item exists
@@ -27,7 +28,7 @@ export const useCartStore = create<CartState>()(
         const newItem: CartItem = {
           ...item,
           cartId,
-          price: price, // Override base price with variant price if exists
+          price: price, // This is now the effective unit price (Base + Variant)
           selectedVariant: variant,
           selectedAddons: addons,
           quantity,
@@ -50,7 +51,8 @@ export const useCartStore = create<CartState>()(
       total: () => {
         const items = get().items;
         return items.reduce((sum, item) => {
-            const itemPrice = item.selectedVariant ? item.selectedVariant.price : item.price;
+            // item.price is the effective unit price (Base + Variant) set in addItem
+            const itemPrice = item.price;
             const addonsPrice = item.selectedAddons.reduce((aSum, addon) => aSum + addon.price, 0);
             return sum + (itemPrice + addonsPrice) * item.quantity;
         }, 0);

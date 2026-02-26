@@ -89,7 +89,7 @@ export const ReceiptPrinter: React.FC<ReceiptPrinterProps> = ({ order, settings,
                         {/* Variants & Addons */}
                         <div className="pl-4 text-xs">
                             {item.selected_variant && (
-                                <div>+ {item.selected_variant.name}</div>
+                                <div>+ {item.selected_variant.name} {item.selected_variant.price > 0 && `(Rs ${item.selected_variant.price.toFixed(2)})`}</div>
                             )}
                             {item.selected_addons && item.selected_addons.map((addon: any, idx: number) => (
                                 <div key={idx}>+ {addon.name}</div>

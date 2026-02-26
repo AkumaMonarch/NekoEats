@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuItem, Addon, Variant } from '../lib/types';
 import { useCartStore } from '../store/cartStore';
+import { useStoreSettings } from '../hooks/useStoreSettings';
 import { cn } from '../lib/utils';
 
 interface ItemModalProps {
@@ -12,6 +13,7 @@ interface ItemModalProps {
 
 export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
   const addItem = useCartStore((state) => state.addItem);
+  const { settings } = useStoreSettings();
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<Variant | undefined>(
     item.variants ? item.variants[0] : undefined
@@ -19,7 +21,14 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
   const [instructions, setInstructions] = useState('');
 
-  const basePrice = selectedVariant ? selectedVariant.price : item.price;
+  const getVariantPrice = (variant: Variant) => {
+    // The user wants variants to be ADDITIVE to the base price.
+    // If variant price is 25, total should be Base (250) + Variant (25) = 275.
+    // If variant price is 0, total should be Base (250) + Variant (0) = 250.
+    return item.price + variant.price;
+  };
+
+  const basePrice = selectedVariant ? getVariantPrice(selectedVariant) : item.price;
   const addonsPrice = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
   const totalPrice = (basePrice + addonsPrice) * quantity;
 
@@ -73,6 +82,7 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                         <h2 className="text-2xl font-black text-white leading-tight mb-1">{item.name}</h2>
                         <span className="text-white/90 font-bold text-lg">
                             Rs {basePrice.toFixed(2)}
+                            {settings?.vat_enabled && <span className="text-xs ml-1 opacity-70 font-normal">(+ VAT)</span>}
                         </span>
                     </div>
                 </div>
@@ -89,7 +99,7 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                 {item.variants && (
                     <div className="px-6 py-4 space-y-3">
                         <div className="flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Choose size</h3>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Choose</h3>
                             <span className="bg-[#E25E3E]/10 text-[#E25E3E] text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Required</span>
                         </div>
                         <div className="space-y-2">
@@ -104,16 +114,18 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                                             : "border-black/5 dark:border-white/5"
                                     )}
                                 >
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 overflow-hidden">
                                         <div className={cn(
-                                            "h-4 w-4 rounded-full border-2 flex items-center justify-center",
+                                            "h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0",
                                             selectedVariant?.id === variant.id ? "border-[#E25E3E]" : "border-slate-300"
                                         )}>
                                             {selectedVariant?.id === variant.id && <div className="h-2 w-2 rounded-full bg-[#E25E3E]" />}
                                         </div>
-                                        <span className="font-bold text-sm text-slate-900 dark:text-white">{variant.name}</span>
+                                        <span className="font-bold text-sm text-slate-900 dark:text-white truncate">{variant.name}</span>
                                     </div>
-                                    <span className="text-sm font-bold text-slate-900 dark:text-white">Rs {variant.price.toFixed(2)}</span>
+                                    {variant.price > 0 && (
+                                        <span className="text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap ml-2">+ Rs {variant.price.toFixed(2)}</span>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -189,6 +201,7 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                         <span className="text-sm uppercase tracking-wider">Add</span>
                         <span className="text-sm opacity-50">•</span>
                         <span className="text-sm">Rs {totalPrice.toFixed(2)}</span>
+                        {settings?.vat_enabled && <span className="text-[10px] opacity-70 font-normal">(+ VAT)</span>}
                     </button>
                 </div>
             </div>

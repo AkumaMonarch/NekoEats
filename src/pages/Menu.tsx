@@ -202,7 +202,10 @@ export default function Menu() {
                             <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-tight mb-1">{item.name}</h3>
                             <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 mb-3">{item.description}</p>
                             <div className="flex items-center justify-between">
-                                <span className="text-base font-bold text-slate-900 dark:text-white">Rs {item.price.toFixed(2)}</span>
+                                <div className="flex flex-col">
+                                    <span className="text-base font-bold text-slate-900 dark:text-white">Rs {item.price.toFixed(2)}</span>
+                                    {settings?.vat_enabled && <span className="text-[9px] text-slate-400 font-medium leading-none">+ VAT</span>}
+                                </div>
                                 <button className="h-8 w-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center">
                                     <span className="material-symbols-outlined text-lg">add</span>
                                 </button>
