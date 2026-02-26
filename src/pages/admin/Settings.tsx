@@ -26,6 +26,7 @@ export default function AdminSettings() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isClosedDatesOpen, setIsClosedDatesOpen] = useState(false);
   const [isServiceOptionsOpen, setIsServiceOptionsOpen] = useState(false);
+  const [isVatOpen, setIsVatOpen] = useState(false);
   const [isBrandingOpen, setIsBrandingOpen] = useState(true);
   const [newClosedDate, setNewClosedDate] = useState('');
   const [newClosedReason, setNewClosedReason] = useState('');
@@ -417,6 +418,49 @@ export default function AdminSettings() {
                             <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings?.is_pickup_enabled ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div 
+                onClick={() => setIsVatOpen(!isVatOpen)}
+                className="flex justify-between items-center mb-4 cursor-pointer"
+            >
+                <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">VAT Settings</h2>
+                <span className={`material-symbols-outlined text-slate-400 transition-transform ${isVatOpen ? 'rotate-180' : ''}`}>expand_more</span>
+            </div>
+            
+            <div className={`bg-white dark:bg-[#1e1411] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${isVatOpen ? 'max-h-[300px] opacity-100 p-4' : 'max-h-0 opacity-0 border-none'}`}>
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="font-bold text-sm text-slate-900 dark:text-white">Enable VAT</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Apply Value Added Tax to orders</p>
+                        </div>
+                        <div 
+                            onClick={() => setSettings(prev => prev ? ({ ...prev, vat_enabled: !prev.vat_enabled }) : null)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none ${settings?.vat_enabled ? 'bg-primary' : 'bg-gray-200 dark:bg-slate-700'}`}
+                        >
+                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings?.vat_enabled ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
+                        </div>
+                    </div>
+
+                    {settings?.vat_enabled && (
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">VAT Percentage (%)</label>
+                            <input 
+                                type="number" 
+                                value={settings?.vat_percentage || 0} 
+                                onChange={(e) => setSettings(prev => prev ? ({ ...prev, vat_percentage: parseFloat(e.target.value) }) : null)}
+                                className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium text-slate-900 dark:text-white" 
+                                placeholder="e.g. 15"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </section>

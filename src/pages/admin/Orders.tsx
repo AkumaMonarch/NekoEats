@@ -326,9 +326,17 @@ export default function AdminOrders() {
                                         <span className="font-bold text-slate-400">Rs {item.price.toFixed(2)}</span>
                                     </div>
                                 ))}
-                                <div className="flex justify-between items-center pt-4 border-t border-dashed border-gray-200 dark:border-white/10">
-                                    <span className="font-bold text-sm">TOTAL</span>
-                                    <span className="font-black text-lg text-primary">Rs {order.total.toFixed(2)}</span>
+                                <div className="pt-4 border-t border-dashed border-gray-200 dark:border-white/10 space-y-2">
+                                    {order.vat_amount > 0 && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-bold text-xs text-slate-400 uppercase">VAT</span>
+                                            <span className="font-bold text-sm text-slate-500 dark:text-slate-400">Rs {order.vat_amount?.toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold text-sm">TOTAL</span>
+                                        <span className="font-black text-lg text-primary">Rs {order.total.toFixed(2)}</span>
+                                    </div>
                                 </div>
                             </div>
 

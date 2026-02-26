@@ -1,12 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useCartStore } from '../store/cartStore';
+import { useStoreSettings } from '../hooks/useStoreSettings';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export function CartFooter() {
   const { items, total } = useCartStore();
+  const { settings } = useStoreSettings();
+  
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
-  const cartTotal = total();
+  const subtotal = total();
+  const vat = settings?.vat_enabled ? (subtotal * (settings.vat_percentage || 0) / 100) : 0;
+  const finalTotal = subtotal + vat;
 
   if (cartCount === 0) return null;
 
@@ -28,8 +33,8 @@ export function CartFooter() {
                 {cartCount}
               </div>
               <div className="flex flex-col items-start">
-                <span className="text-xs font-medium opacity-90 uppercase tracking-wider">Total</span>
-                <span className="text-lg leading-none">Rs {cartTotal.toFixed(2)}</span>
+                <span className="text-xs font-medium opacity-90 uppercase tracking-wider">Total {settings?.vat_enabled && '(incl. VAT)'}</span>
+                <span className="text-lg leading-none">Rs {finalTotal.toFixed(2)}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">

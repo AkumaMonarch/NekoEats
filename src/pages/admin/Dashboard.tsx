@@ -4,10 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { dashboardService, DashboardStats } from '../../services/dashboardService';
 import { formatCurrency } from '../../lib/utils';
 import { useDraggableScroll } from '../../hooks/useDraggableScroll';
+import { useStoreSettings } from '../../hooks/useStoreSettings';
+import { 
+  PieChart, Pie, Cell, 
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  AreaChart, Area
+} from 'recharts';
+
+const COLORS = ['#E25E3E', '#FF9F1C', '#2EC4B6', '#CBF3F0', '#2B2D42'];
 
 export default function AdminDashboard() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const { settings } = useStoreSettings();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -55,6 +64,13 @@ export default function AdminDashboard() {
             </div>
             <div className="flex gap-2">
                 <button 
+                    onClick={() => navigate('/admin/reports')}
+                    className="h-10 w-10 flex items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-500 active:scale-95 transition-transform"
+                    title="Reports"
+                >
+                    <span className="material-symbols-outlined text-xl">description</span>
+                </button>
+                <button 
                     onClick={handleLogout}
                     className="h-10 w-10 flex items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 active:scale-95 transition-transform"
                     title="Logout"
@@ -79,6 +95,16 @@ export default function AdminDashboard() {
                     <span className="text-xs font-bold">Live</span>
                 </div>
             </div>
+            {settings?.vat_enabled && (
+                <div className="flex-none w-[160px] p-5 rounded-3xl bg-[#160e0c] border border-white/5 shadow-sm shrink-0">
+                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Total VAT</p>
+                    <p className="text-3xl font-bold text-white tracking-tight">{formatCurrency(stats?.totalVat || 0)}</p>
+                    <div className="flex items-center gap-1.5 mt-3 text-emerald-500">
+                        <span className="material-symbols-outlined text-base font-bold">trending_up</span>
+                        <span className="text-xs font-bold">Collected</span>
+                    </div>
+                </div>
+            )}
             <div className="flex-none w-[160px] p-5 rounded-3xl bg-[#160e0c] border border-white/5 shadow-sm shrink-0">
                 <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Total Orders</p>
                 <p className="text-3xl font-bold text-white tracking-tight">{stats?.totalOrders || 0}</p>
@@ -99,7 +125,110 @@ export default function AdminDashboard() {
             <div className="w-5 shrink-0"></div>
         </div>
 
-        {/* Revenue Mix */}
+        {/* Top Selling Items (Pie Chart) */}
+        <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
+            <h3 className="font-bold text-base tracking-tight mb-4">Top Selling Items</h3>
+            <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={stats?.topItems}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="quantity"
+                        >
+                            {stats?.topItems.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                        </Pie>
+                        <Tooltip 
+                            contentStyle={{ backgroundColor: '#160e0c', border: 'none', borderRadius: '8px', color: '#fff' }}
+                            itemStyle={{ color: '#fff' }}
+                        />
+                    </PieChart>
+                </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap gap-2 justify-center mt-2">
+                {stats?.topItems.map((item, index) => (
+                    <div key={item.name} className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">{item.name}</span>
+                    </div>
+                ))}
+            </div>
+        </section>
+
+        {/* Busy Hours (Bar Chart) */}
+        <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
+            <h3 className="font-bold text-base tracking-tight mb-4">Busy Hours</h3>
+            <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats?.busyHours}>
+                        <XAxis 
+                            dataKey="hour" 
+                            tick={{ fontSize: 10, fill: '#94a3b8' }} 
+                            axisLine={false}
+                            tickLine={false}
+                            interval={3}
+                        />
+                        <Tooltip 
+                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                            contentStyle={{ backgroundColor: '#160e0c', border: 'none', borderRadius: '8px', color: '#fff' }}
+                        />
+                        <Bar dataKey="count" fill="#E25E3E" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+        </section>
+
+        {/* Delivery vs Pickup Split (Donut Chart) */}
+        <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
+            <h3 className="font-bold text-base tracking-tight mb-4">Delivery vs Pickup</h3>
+            <div className="flex items-center gap-6">
+                <div className="h-40 w-40 shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={stats?.serviceOptionSplit}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={40}
+                                outerRadius={70}
+                                fill="#8884d8"
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {stats?.serviceOptionSplit.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={index === 0 ? '#E25E3E' : '#2B2D42'} />
+                                ))}
+                            </Pie>
+                            <Tooltip 
+                                contentStyle={{ backgroundColor: '#160e0c', border: 'none', borderRadius: '8px', color: '#fff' }}
+                            />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-3">
+                    {stats?.serviceOptionSplit.map((option, index) => (
+                        <div key={option.name} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className={`h-3 w-3 rounded-full ${index === 0 ? 'bg-[#E25E3E]' : 'bg-[#2B2D42]'}`}></div>
+                                <span className="text-sm font-medium text-slate-900 dark:text-white">{option.name}</span>
+                            </div>
+                            <span className="text-sm font-bold">{option.value}</span>
+                        </div>
+                    ))}
+                    {stats?.serviceOptionSplit.length === 0 && (
+                        <p className="text-xs text-slate-400">No data available</p>
+                    )}
+                </div>
+            </div>
+        </section>
+
+        {/* Revenue Mix (Existing) */}
         <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-base tracking-tight">Revenue Mix</h3>
@@ -155,10 +284,10 @@ export default function AdminDashboard() {
             </div>
         </section>
 
-        {/* Top Items */}
+        {/* Top Items List (Existing) */}
         <section className="space-y-4">
             <div className="flex justify-between items-end px-1">
-                <h3 className="font-bold text-base tracking-tight">Top Performing Items</h3>
+                <h3 className="font-bold text-base tracking-tight">Top Performing Items List</h3>
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Unit Sales</span>
             </div>
             <div className="space-y-3">

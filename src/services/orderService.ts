@@ -6,6 +6,7 @@ export const orderService = {
     customer_name: string;
     customer_phone: string;
     total: number;
+    vat_amount?: number;
     items: CartItem[];
     payment_method: string;
     service_option: string;
@@ -23,6 +24,7 @@ export const orderService = {
         customer_name: order.customer_name,
         customer_phone: order.customer_phone,
         total: order.total,
+        vat_amount: order.vat_amount || 0,
         status: initialStatus,
         payment_method: order.payment_method,
         service_option: order.service_option,

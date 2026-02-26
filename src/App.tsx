@@ -15,6 +15,7 @@ import AdminOrders from './pages/admin/Orders';
 import AdminMenu from './pages/admin/MenuEditor';
 import AdminCategories from './pages/admin/Categories';
 import AdminSettings from './pages/admin/Settings';
+import AdminReports from './pages/admin/Reports';
 import AdminLogin from './pages/admin/Login';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -42,6 +43,7 @@ function AppContent() {
           <Route path="menu" element={<AdminMenu />} />
           <Route path="categories" element={<AdminCategories />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="reports" element={<AdminReports />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

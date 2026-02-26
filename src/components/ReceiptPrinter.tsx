@@ -104,6 +104,12 @@ export const ReceiptPrinter: React.FC<ReceiptPrinterProps> = ({ order, settings,
 
             {/* Totals */}
             <div className="border-b border-dashed border-black pb-2 mb-2">
+                {order.vat_amount > 0 && (
+                    <div className="flex justify-between text-xs mb-1">
+                        <span>VAT:</span>
+                        <span>Rs {order.vat_amount.toFixed(2)}</span>
+                    </div>
+                )}
                 <div className="flex justify-between font-bold text-lg mt-1">
                     <span>TOTAL</span>
                     <span>Rs {order.total.toFixed(2)}</span>

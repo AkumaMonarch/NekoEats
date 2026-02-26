@@ -37,7 +37,8 @@ export default function Cart() {
 
   const cartTotal = total();
   const deliveryFee = serviceOption === 'delivery' ? 3.99 : 0;
-  const finalTotal = cartTotal + deliveryFee;
+  const vatAmount = settings?.vat_enabled ? (cartTotal * (settings.vat_percentage || 0) / 100) : 0;
+  const finalTotal = cartTotal + deliveryFee + vatAmount;
   const isOpen = settings?.is_open ?? true;
 
   const handleCheckout = () => {
@@ -63,6 +64,7 @@ export default function Cart() {
             customer_name: contact.name,
             customer_phone: contact.phone,
             total: finalTotal,
+            vat_amount: vatAmount,
             items: items,
             payment_method: paymentMethod,
             service_option: serviceOption,
@@ -226,6 +228,12 @@ export default function Cart() {
                                 <span className="text-slate-500 dark:text-gray-400">Subtotal</span>
                                 <span className="font-semibold text-slate-900 dark:text-white">Rs {cartTotal.toFixed(2)}</span>
                             </div>
+                            {settings?.vat_enabled && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-500 dark:text-gray-400">VAT ({settings.vat_percentage}%)</span>
+                                    <span className="font-semibold text-slate-900 dark:text-white">Rs {vatAmount.toFixed(2)}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-500 dark:text-gray-400">Delivery Fee</span>
                                 <span className="font-semibold text-slate-900 dark:text-white">Rs {deliveryFee.toFixed(2)}</span>
@@ -552,6 +560,12 @@ export default function Cart() {
                         <span className="text-slate-500 dark:text-gray-400">Subtotal</span>
                         <span className="font-semibold text-slate-900 dark:text-white">Rs {cartTotal.toFixed(2)}</span>
                     </div>
+                    {settings?.vat_enabled && (
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-500 dark:text-gray-400">VAT ({settings.vat_percentage}%)</span>
+                            <span className="font-semibold text-slate-900 dark:text-white">Rs {vatAmount.toFixed(2)}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-500 dark:text-gray-400">Delivery Fee</span>
                         <span className="font-semibold text-slate-900 dark:text-white">Rs {deliveryFee.toFixed(2)}</span>

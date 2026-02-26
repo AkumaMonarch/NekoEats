@@ -42,6 +42,8 @@ export interface StoreSettings {
   closed_dates?: ClosedDate[];
   is_delivery_enabled?: boolean;
   is_pickup_enabled?: boolean;
+  vat_enabled?: boolean;
+  vat_percentage?: number;
 }
 
 export interface MenuItem {
@@ -84,6 +86,7 @@ export interface Order {
   customer_phone: string;
   items: CartItem[];
   total: number;
+  vat_amount?: number;
   status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'awaiting_confirmation';
   created_at: string;
   payment_method: 'cash' | 'card';
