@@ -42,19 +42,19 @@ export default function Home() {
     <div className="min-h-screen pb-24 bg-background-light dark:bg-background-dark">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-gray-200 dark:border-white/5 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
             {settings?.logo_url ? (
-                <img src={settings.logo_url} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
+                <img src={settings.logo_url} alt="Logo" className="h-10 w-10 rounded-full object-cover shadow-sm" />
             ) : (
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white">
-                    <span className="material-symbols-outlined text-lg">lunch_dining</span>
+                <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white shadow-sm">
+                    <span className="material-symbols-outlined text-xl">lunch_dining</span>
                 </div>
             )}
             <div>
-                <h1 className="text-sm font-bold leading-none text-slate-900 dark:text-white">{settings?.restaurant_name || 'THE BURGER HOUSE'}</h1>
-                <div className="flex items-center gap-1">
-                    <div className={`h-1.5 w-1.5 rounded-full ${isOpen ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className={`text-[10px] font-bold uppercase ${isOpen ? 'text-green-500' : 'text-red-500'}`}>
+                <h1 className="text-lg font-bold leading-tight text-slate-900 dark:text-white">{settings?.restaurant_name || 'THE BURGER HOUSE'}</h1>
+                <div className="flex items-center gap-1.5">
+                    <div className={`h-2 w-2 rounded-full ${isOpen ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className={`text-xs font-bold uppercase tracking-wide ${isOpen ? 'text-green-500' : 'text-red-500'}`}>
                         {isOpen ? `Open Now • Closes ${settings?.closing_time || '22:00'}` : 'Closed Now'}
                     </span>
                 </div>
@@ -63,9 +63,9 @@ export default function Home() {
         <div className="flex gap-2">
             <button 
                 onClick={toggleTheme}
-                className="h-9 w-9 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-slate-600 dark:text-white transition-colors"
+                className="h-10 w-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-slate-600 dark:text-white transition-colors hover:bg-gray-200 dark:hover:bg-white/20"
             >
-                <span className="material-symbols-outlined text-lg">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
+                <span className="material-symbols-outlined text-xl">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
             </button>
         </div>
       </header>
