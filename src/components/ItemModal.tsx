@@ -64,20 +64,20 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
             </button>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto hide-scrollbar pb-32">
+            <div className="flex-1 overflow-y-auto hide-scrollbar pb-24">
                 {/* Header Image */}
-                <div className="relative h-72 w-full shrink-0">
+                <div className="relative h-64 w-full shrink-0">
                     <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                     <div className="absolute bottom-4 left-6 right-6">
-                        <h2 className="text-3xl font-black text-white leading-tight mb-1">{item.name}</h2>
-                        <span className="text-white/90 font-bold text-xl">
+                        <h2 className="text-2xl font-black text-white leading-tight mb-1">{item.name}</h2>
+                        <span className="text-white/90 font-bold text-lg">
                             Rs {basePrice.toFixed(2)}
                         </span>
                     </div>
                 </div>
 
-                <div className="px-6 pt-6 pb-4">
+                <div className="px-6 pt-4 pb-3">
                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed font-medium">
                         {item.description}
                     </p>
@@ -87,18 +87,18 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
 
                 {/* Variants */}
                 {item.variants && (
-                    <div className="px-6 py-6 space-y-4">
+                    <div className="px-6 py-4 space-y-3">
                         <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase tracking-wider">Choose size</h3>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Choose size</h3>
                             <span className="bg-[#E25E3E]/10 text-[#E25E3E] text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Required</span>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             {item.variants.map((variant) => (
                                 <div 
                                     key={variant.id}
                                     onClick={() => setSelectedVariant(variant)}
                                     className={cn(
-                                        "flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all active:scale-[0.99]",
+                                        "flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all active:scale-[0.99]",
                                         selectedVariant?.id === variant.id 
                                             ? "border-[#E25E3E] bg-[#E25E3E]/5" 
                                             : "border-black/5 dark:border-white/5"
@@ -106,12 +106,12 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className={cn(
-                                            "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                            "h-4 w-4 rounded-full border-2 flex items-center justify-center",
                                             selectedVariant?.id === variant.id ? "border-[#E25E3E]" : "border-slate-300"
                                         )}>
-                                            {selectedVariant?.id === variant.id && <div className="h-2.5 w-2.5 rounded-full bg-[#E25E3E]" />}
+                                            {selectedVariant?.id === variant.id && <div className="h-2 w-2 rounded-full bg-[#E25E3E]" />}
                                         </div>
-                                        <span className="font-bold text-slate-900 dark:text-white">{variant.name}</span>
+                                        <span className="font-bold text-sm text-slate-900 dark:text-white">{variant.name}</span>
                                     </div>
                                     <span className="text-sm font-bold text-slate-900 dark:text-white">Rs {variant.price.toFixed(2)}</span>
                                 </div>
@@ -124,23 +124,23 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
 
                 {/* Addons */}
                 {item.addons && (
-                    <div className="px-6 py-6 space-y-4">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase tracking-wider">Add toppings</h3>
+                    <div className="px-6 py-4 space-y-3">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Add toppings</h3>
                         <div className="space-y-1">
                             {item.addons.map((addon) => {
                                 const isSelected = !!selectedAddons.find(a => a.id === addon.id);
                                 return (
-                                    <label key={addon.id} className="flex items-center justify-between py-3 cursor-pointer active:opacity-70" onClick={() => toggleAddon(addon)}>
+                                    <label key={addon.id} className="flex items-center justify-between py-2 cursor-pointer active:opacity-70" onClick={() => toggleAddon(addon)}>
                                         <div className="flex items-center gap-3">
                                             <div className={cn(
-                                                "w-6 h-6 rounded-lg flex items-center justify-center transition-colors border-2",
+                                                "w-5 h-5 rounded flex items-center justify-center transition-colors border-2",
                                                 isSelected ? "border-[#E25E3E] bg-[#E25E3E]" : "border-slate-300 dark:border-white/20"
                                             )}>
-                                                {isSelected && <span className="material-symbols-outlined text-white text-sm font-bold">check</span>}
+                                                {isSelected && <span className="material-symbols-outlined text-white text-xs font-bold">check</span>}
                                             </div>
-                                            <span className="text-slate-900 dark:text-white font-bold">{addon.name}</span>
+                                            <span className="text-sm text-slate-900 dark:text-white font-bold">{addon.name}</span>
                                         </div>
-                                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400">+ Rs {addon.price.toFixed(2)}</span>
+                                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">+ Rs {addon.price.toFixed(2)}</span>
                                     </label>
                                 );
                             })}
@@ -151,12 +151,12 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                 <div className="h-px bg-black/5 dark:bg-white/5 mx-6"></div>
 
                 {/* Instructions */}
-                <div className="px-6 py-6 space-y-4">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase tracking-wider">Special Instructions</h3>
+                <div className="px-6 py-4 space-y-3">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Special Instructions</h3>
                     <textarea 
                         value={instructions}
                         onChange={(e) => setInstructions(e.target.value)}
-                        className="w-full rounded-xl border-none bg-black/5 dark:bg-white/5 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#E25E3E]/50 text-sm p-4 placeholder-slate-400 font-medium resize-none"
+                        className="w-full rounded-xl border-none bg-black/5 dark:bg-white/5 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#E25E3E]/50 text-sm p-3 placeholder-slate-400 font-medium resize-none"
                         placeholder="Add a note (e.g., no onions, sauce on the side...)"
                         rows={3}
                     />
