@@ -185,6 +185,7 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                         onClick={handleAddToCart}
                         className="flex-1 bg-[#E25E3E] h-10 rounded-xl flex items-center justify-center gap-2 px-4 text-white font-bold transition-transform active:scale-[0.98] shadow-lg shadow-[#E25E3E]/20"
                     >
+                        <span className="material-symbols-outlined text-lg">shopping_basket</span>
                         <span className="text-sm uppercase tracking-wider">Add</span>
                         <span className="text-sm opacity-50">•</span>
                         <span className="text-sm">Rs {totalPrice.toFixed(2)}</span>
