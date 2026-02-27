@@ -60,6 +60,14 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'neko-eats-cart',
+      version: 1, // Increment this to invalidate cache when data structure changes
+      migrate: (persistedState, version) => {
+        // If version doesn't match, clear the cart to prevent calculation errors from stale data
+        if (version !== 1) {
+            return { items: [] };
+        }
+        return persistedState as CartState;
+      },
     }
   )
 );
