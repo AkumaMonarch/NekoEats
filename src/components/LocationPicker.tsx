@@ -28,6 +28,7 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
   const [fee, setFee] = useState<number | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
         style: 'https://tiles.openfreemap.org/styles/bright',
         center: [initialLng || 57.5522, initialLat || -20.2833],
         zoom: 11,
+        cooperativeGestures: true, // Requires 2 fingers to move map on mobile
       });
 
       map.current.on('moveend', () => {
@@ -57,6 +59,27 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
         // map.current?.remove(); // React strict mode might cause issues if we remove too early, but usually good practice.
     };
   }, []);
+
+  // Handle locking/unlocking map interactions
+  useEffect(() => {
+    if (!map.current) return;
+    
+    if (isLocked) {
+        map.current.dragPan.disable();
+        map.current.scrollZoom.disable();
+        map.current.touchZoomRotate.disable();
+        map.current.doubleClickZoom.disable();
+        map.current.boxZoom.disable();
+        map.current.keyboard.disable();
+    } else {
+        map.current.dragPan.enable();
+        map.current.scrollZoom.enable();
+        map.current.touchZoomRotate.enable();
+        map.current.doubleClickZoom.enable();
+        map.current.boxZoom.enable();
+        map.current.keyboard.enable();
+    }
+  }, [isLocked]);
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371; // Radius of the earth in km
@@ -219,18 +242,30 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
             <div ref={mapContainer} className="w-full h-full" />
             
             {/* Center Pin */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 -mt-4">
+            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 -mt-4 transition-opacity ${isLocked ? 'opacity-50' : 'opacity-100'}`}>
                 <span className="material-symbols-outlined text-4xl text-primary drop-shadow-lg">location_on</span>
             </div>
 
+            {/* Locked Overlay */}
+            {isLocked && (
+                <div className="absolute inset-0 bg-black/5 backdrop-blur-[1px] z-20 flex items-center justify-center pointer-events-none">
+                    <div className="bg-white/90 dark:bg-black/80 px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 border border-white/20">
+                        <span className="material-symbols-outlined text-green-600 text-sm">lock</span>
+                        <span className="font-bold text-xs text-slate-900 dark:text-white">Location Locked</span>
+                    </div>
+                </div>
+            )}
+
             {/* GPS Button */}
-            <button 
-                onClick={handleGPS}
-                className="absolute bottom-4 right-4 h-10 w-10 bg-white dark:bg-[#1e1411] rounded-full shadow-lg flex items-center justify-center text-slate-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-colors z-10"
-                title="Use My Location"
-            >
-                <span className="material-symbols-outlined">my_location</span>
-            </button>
+            {!isLocked && (
+                <button 
+                    onClick={handleGPS}
+                    className="absolute bottom-4 right-4 h-10 w-10 bg-white dark:bg-[#1e1411] rounded-full shadow-lg flex items-center justify-center text-slate-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-colors z-10"
+                    title="Use My Location"
+                >
+                    <span className="material-symbols-outlined">my_location</span>
+                </button>
+            )}
 
             {/* Loading Overlay */}
             {loading && (
@@ -270,6 +305,27 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
                     {warning}
                 </div>
             )}
+
+            {/* Lock/Unlock Controls */}
+            <div className="pt-2 mt-2 border-t border-dashed border-gray-200 dark:border-white/10">
+                {!isLocked ? (
+                    <button 
+                        onClick={() => setIsLocked(true)}
+                        className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 rounded-lg font-bold shadow-sm hover:bg-slate-800 dark:hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 text-sm"
+                    >
+                        <span className="material-symbols-outlined text-lg">lock</span>
+                        Confirm Location
+                    </button>
+                ) : (
+                    <button 
+                        onClick={() => setIsLocked(false)}
+                        className="w-full bg-white dark:bg-white/10 text-slate-900 dark:text-white border border-gray-200 dark:border-white/10 py-2.5 rounded-lg font-bold shadow-sm hover:bg-gray-50 dark:hover:bg-white/20 transition-colors flex items-center justify-center gap-2 text-sm"
+                    >
+                        <span className="material-symbols-outlined text-lg">edit_location</span>
+                        Change Location
+                    </button>
+                )}
+            </div>
         </div>
     </div>
   );
