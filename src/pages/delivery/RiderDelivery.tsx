@@ -148,7 +148,28 @@ export default function RiderDelivery() {
       },
       (error) => {
         console.error('Error getting location:', error);
-        alert('Unable to retrieve your location');
+        let errorMessage = 'Unable to retrieve your location.';
+        
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                errorMessage = 'Location access is blocked. Please enable location permissions in your browser settings (usually the lock icon in the address bar) and try again.';
+                break;
+            case error.POSITION_UNAVAILABLE:
+                errorMessage = 'Location information is unavailable. Please check your network connection.';
+                break;
+            case error.TIMEOUT:
+                errorMessage = 'The request to get your location timed out. Please try again.';
+                break;
+            default:
+                errorMessage = 'An unknown error occurred while retrieving location.';
+        }
+        
+        alert(errorMessage);
+      },
+      {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
       }
     );
   };

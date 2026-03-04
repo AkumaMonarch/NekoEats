@@ -1,5 +1,7 @@
 {
-  "name": "",
-  "description": "",
-  "requestFramePermissions": []
+  "name": "Store Locator App",
+  "description": "A store locator application with map integration",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
 }

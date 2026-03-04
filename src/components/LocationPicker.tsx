@@ -27,6 +27,7 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
   const [distance, setDistance] = useState<number | null>(null);
   const [fee, setFee] = useState<number | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -147,8 +148,9 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
   };
 
   const handleGPS = () => {
+    setErrorMsg(null);
     if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser');
+        setErrorMsg('Geolocation is not supported by your browser');
         return;
     }
     setLoading(true);
@@ -164,14 +166,55 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
         },
         (error) => {
             console.error('GPS Error:', error);
-            alert('Unable to retrieve your location. Please check permissions.');
             setLoading(false);
+
+            let errorMessage = 'Unable to retrieve your location.';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'Location access is blocked. Please enable location permissions in your browser settings (usually the lock icon in the address bar) and try again.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Location information is unavailable. Please check your network connection.';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'The request to get your location timed out. Please try again.';
+                    break;
+                default:
+                    errorMessage = 'An unknown error occurred while retrieving location.';
+            }
+            
+            setErrorMsg(errorMessage);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
         }
     );
   };
 
   return (
     <div className="space-y-3">
+        {errorMsg && (
+            <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl p-3 flex items-start gap-3">
+                <span className="material-symbols-outlined text-red-500 text-xl mt-0.5">error</span>
+                <div className="flex-1">
+                    <p className="text-sm font-bold text-red-800 dark:text-red-200">Location Error</p>
+                    <p className="text-xs text-red-600 dark:text-red-300 mt-1">{errorMsg}</p>
+                    <button 
+                        onClick={handleGPS}
+                        className="mt-2 text-xs font-bold bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-200 px-3 py-1.5 rounded-lg hover:bg-red-200 dark:hover:bg-red-500/30 transition-colors"
+                    >
+                        Retry Permission
+                    </button>
+                </div>
+                <button onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-600 dark:hover:text-red-200">
+                    <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+        )}
+
         <div className="relative w-full h-[250px] md:h-[300px] rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-inner">
             <div ref={mapContainer} className="w-full h-full" />
             
