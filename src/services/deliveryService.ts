@@ -11,29 +11,50 @@ export const deliveryService = {
       throw new Error('Restaurant location not set in settings');
     }
 
-    // 2. Calculate Distance
-    const distanceKm = mapService.calculateDistance(
-      settings.latitude,
-      settings.longitude,
-      customerLat,
-      customerLng
-    );
-
-    // 3. Calculate Fee
-    const baseFee = settings.delivery_base_fee || 0;
-    const perKmFee = settings.delivery_per_km_fee || 0;
-    const deliveryFee = parseFloat((baseFee + (perKmFee * distanceKm)).toFixed(2));
-
-    // 4. Get Route Estimate (Time)
+    // 2. Get Route from OSRM (Distance & Time)
     const route = await mapService.getRoute(
       settings.latitude,
       settings.longitude,
       customerLat,
       customerLng
     );
-    const estimatedMinutes = route ? route.estimated_minutes : Math.ceil(distanceKm * 5); // Fallback: 5 mins per km
 
-    // 5. Create Delivery Record
+    let distanceKm = 0;
+    let estimatedMinutes = 0;
+
+    if (route) {
+        distanceKm = route.distance_km;
+        estimatedMinutes = route.estimated_minutes;
+    } else {
+        // Fallback to straight line
+        distanceKm = mapService.calculateDistance(
+            settings.latitude,
+            settings.longitude,
+            customerLat,
+            customerLng
+        );
+        estimatedMinutes = Math.ceil(distanceKm * 5); // Fallback: 5 mins per km
+    }
+
+    // 3. Get Order to check if fee is already set
+    const { data: order } = await supabase
+        .from('orders')
+        .select('delivery_fee')
+        .eq('id', orderId)
+        .single();
+
+    let deliveryFee = 0;
+
+    if (order && order.delivery_fee !== undefined && order.delivery_fee !== null) {
+        deliveryFee = order.delivery_fee;
+    } else {
+        // Calculate Fee if not in order
+        const baseFee = settings.delivery_base_fee || 0;
+        const perKmFee = settings.delivery_per_km_fee || 0;
+        deliveryFee = parseFloat((baseFee + (perKmFee * distanceKm)).toFixed(2));
+    }
+
+    // 4. Create Delivery Record
     const { data: delivery, error: deliveryError } = await supabase
       .from('deliveries')
       .insert([{
@@ -57,25 +78,22 @@ export const deliveryService = {
 
     if (deliveryError) throw deliveryError;
 
-    // 6. Update Tracking URL
+    // 5. Update Tracking URL
     const trackingUrl = `${window.location.origin}/track/${delivery.id}`;
     await supabase
       .from('deliveries')
       .update({ tracking_url: trackingUrl })
       .eq('id', delivery.id);
 
-    // 7. Update Order with Delivery Fee
+    // 6. Update Order with Delivery Fee (ensure it's saved if it wasn't)
     await supabase
       .from('orders')
       .update({ 
         delivery_fee: deliveryFee,
-        // We might want to update total too, but usually total includes delivery fee?
-        // If the order total was already calculated without fee, we should add it.
-        // But for now, just setting delivery_fee field.
       })
       .eq('id', orderId);
 
-    // 8. Update Rider Status
+    // 7. Update Rider Status
     await supabase
       .from('riders')
       .update({ status: 'busy' })

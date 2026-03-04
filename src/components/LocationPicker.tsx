@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { mapService } from '../services/mapService';
+import { settingsService } from '../services/settingsService';
 
 interface LocationPickerProps {
   onLocationSelect: (location: {
@@ -14,9 +16,9 @@ interface LocationPickerProps {
   initialLng?: number;
 }
 
-const RESTAURANT_COORDS = { lat: -20.1609, lng: 57.4966 };
-const BASE_FEE = 50;
-const PER_KM_FEE = 15;
+const DEFAULT_RESTAURANT_COORDS = { lat: -20.1609, lng: 57.4966 };
+const DEFAULT_BASE_FEE = 50;
+const DEFAULT_PER_KM_FEE = 15;
 const MAX_DISTANCE_KM = 15;
 
 export default function LocationPicker({ onLocationSelect, initialLat, initialLng }: LocationPickerProps) {
@@ -30,6 +32,29 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Settings state
+  const [restaurantCoords, setRestaurantCoords] = useState(DEFAULT_RESTAURANT_COORDS);
+  const [baseFee, setBaseFee] = useState(DEFAULT_BASE_FEE);
+  const [perKmFee, setPerKmFee] = useState(DEFAULT_PER_KM_FEE);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await settingsService.getSettings();
+        if (settings) {
+          if (settings.latitude && settings.longitude) {
+            setRestaurantCoords({ lat: settings.latitude, lng: settings.longitude });
+          }
+          if (settings.delivery_base_fee !== undefined) setBaseFee(settings.delivery_base_fee);
+          if (settings.delivery_per_km_fee !== undefined) setPerKmFee(settings.delivery_per_km_fee);
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
 
   useEffect(() => {
     if (map.current) return; // Initialize only once
@@ -58,7 +83,7 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
         // Cleanup if needed
         // map.current?.remove(); // React strict mode might cause issues if we remove too early, but usually good practice.
     };
-  }, []);
+  }, [restaurantCoords, baseFee, perKmFee]); // Re-run if settings change? No, map init should be independent. But handleMapMove depends on them.
 
   // Handle locking/unlocking map interactions
   useEffect(() => {
@@ -81,88 +106,87 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
     }
   }, [isLocked]);
 
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // Radius of the earth in km
-    const dLat = deg2rad(lat2 - lat1);
-    const dLon = deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Distance in km
-    return d;
-  };
-
-  const deg2rad = (deg: number) => {
-    return deg * (Math.PI / 180);
-  };
-
   const handleMapMove = () => {
     if (!map.current) return;
     const center = map.current.getCenter();
     const lat = center.lat;
     const lng = center.lng;
 
-    // Calculate distance and fee immediately
-    const dist = calculateDistance(RESTAURANT_COORDS.lat, RESTAURANT_COORDS.lng, lat, lng);
-    setDistance(dist);
-    const calculatedFee = BASE_FEE + (dist * PER_KM_FEE);
-    setFee(calculatedFee);
-
-    if (dist > MAX_DISTANCE_KM) {
-        setWarning('⚠️ This location may be outside our delivery zone');
-    } else {
-        setWarning(null);
-    }
-
-    // Debounce reverse geocoding
+    // Debounce OSRM and reverse geocoding
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     setLoading(true);
     
     debounceTimer.current = setTimeout(async () => {
       try {
         let formattedAddress = 'Unknown Location';
-        
-        try {
-            // Try Nominatim first (without custom User-Agent which is forbidden in browser fetch)
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.display_name) {
-                    formattedAddress = data.display_name;
+        let roadDist = 0;
+        let calculatedFee = 0;
+
+        // Parallel fetch: Reverse Geocode AND OSRM Route
+        const geocodePromise = (async () => {
+            try {
+                // Try Nominatim first
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.display_name) {
+                        return data.display_name;
+                    }
                 }
-            } else {
                 throw new Error('Nominatim failed');
+            } catch (e) {
+                console.warn('Nominatim failed, trying fallback:', e);
+                // Fallback to BigDataCloud
+                const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+                if (response.ok) {
+                    const data = await response.json();
+                    return [data.locality, data.city, data.principalSubdivision, data.countryName].filter(Boolean).join(', ');
+                }
+                return 'Unknown Location';
             }
-        } catch (e) {
-            console.warn('Nominatim failed, trying fallback:', e);
-            // Fallback to BigDataCloud
-            const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
-            if (response.ok) {
-                const data = await response.json();
-                formattedAddress = [data.locality, data.city, data.principalSubdivision, data.countryName].filter(Boolean).join(', ');
-            }
+        })();
+
+        const routePromise = mapService.getRoute(restaurantCoords.lat, restaurantCoords.lng, lat, lng);
+
+        const [addressResult, routeResult] = await Promise.all([geocodePromise, routePromise]);
+        
+        formattedAddress = addressResult;
+
+        if (routeResult) {
+            roadDist = routeResult.distance_km;
+        } else {
+            // Fallback to straight line if OSRM fails
+             roadDist = mapService.calculateDistance(restaurantCoords.lat, restaurantCoords.lng, lat, lng);
         }
 
+        calculatedFee = baseFee + (roadDist * perKmFee);
+
+        setDistance(roadDist);
+        setFee(calculatedFee);
         setAddress(formattedAddress);
+
+        if (roadDist > MAX_DISTANCE_KM) {
+            setWarning('⚠️ This location may be outside our delivery zone');
+        } else {
+            setWarning(null);
+        }
         
         onLocationSelect({
             address: formattedAddress,
             lat,
             lng,
-            distance: dist,
+            distance: roadDist,
             deliveryFee: calculatedFee
         });
       } catch (error) {
-        console.error('Reverse geocoding failed:', error);
+        console.error('Location resolution failed:', error);
         setAddress('Location selected (Address lookup failed)');
          onLocationSelect({
             address: 'Location selected (Address lookup failed)',
             lat,
             lng,
-            distance: dist,
-            deliveryFee: calculatedFee
+            distance: 0,
+            deliveryFee: baseFee
         });
       } finally {
         setLoading(false);
@@ -290,7 +314,7 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
                 <div className="flex items-center gap-4 pt-2 border-t border-dashed border-gray-200 dark:border-white/10">
                     <div>
                         <p className="text-[10px] text-slate-500 uppercase font-bold">Distance</p>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white">{distance.toFixed(1)} km</p>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">{distance.toFixed(1)} km <span className="text-[10px] font-normal text-slate-500">(by road)</span></p>
                     </div>
                     <div>
                         <p className="text-[10px] text-slate-500 uppercase font-bold">Est. Fee</p>

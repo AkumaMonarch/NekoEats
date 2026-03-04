@@ -88,7 +88,7 @@ export default function Cart() {
             delivery_lng: deliveryLng || undefined,
             google_maps_link: contact.googleMapsLink,
             notes: contact.notes,
-            // We could also save delivery_fee if the schema supported it, but it's part of total usually or separate
+            delivery_fee: currentDeliveryFee,
         });
 
         setOrderCode(order.order_code);

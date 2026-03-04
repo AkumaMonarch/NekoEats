@@ -14,6 +14,7 @@ export const orderService = {
     delivery_lat?: number;
     delivery_lng?: number;
     google_maps_link?: string;
+    delivery_fee?: number;
     notes?: string;
   }) {
     // 1. Create Order
@@ -35,6 +36,7 @@ export const orderService = {
         delivery_lat: order.delivery_lat,
         delivery_lng: order.delivery_lng,
         google_maps_link: order.google_maps_link,
+        delivery_fee: order.delivery_fee,
         notes: order.notes,
         items: order.items // Save full items details as JSONB
       })
