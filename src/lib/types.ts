@@ -44,6 +44,12 @@ export interface StoreSettings {
   is_pickup_enabled?: boolean;
   vat_enabled?: boolean;
   vat_percentage?: number;
+  address?: string;
+  google_maps_url?: string;
+  latitude?: number;
+  longitude?: number;
+  delivery_base_fee?: number;
+  delivery_per_km_fee?: number;
 }
 
 export interface MenuItem {
@@ -87,10 +93,47 @@ export interface Order {
   items: CartItem[];
   total: number;
   vat_amount?: number;
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'awaiting_confirmation';
+  status: 'pending' | 'received' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'awaiting_confirmation';
   created_at: string;
   payment_method: 'cash' | 'card';
   service_option: string;
   delivery_address?: string;
+  delivery_lat?: number;
+  delivery_lng?: number;
+  google_maps_link?: string;
+  delivery_fee?: number;
   notes?: string;
+}
+
+export interface Rider {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  status: 'available' | 'busy' | 'offline';
+  total_deliveries: number;
+  created_at: string;
+}
+
+export interface Delivery {
+  id: string;
+  order_id: string;
+  rider_id: string;
+  restaurant_lat: number;
+  restaurant_lng: number;
+  customer_lat: number;
+  customer_lng: number;
+  customer_address: string;
+  distance_km: number;
+  delivery_fee: number;
+  estimated_minutes: number;
+  rider_current_lat?: number;
+  rider_current_lng?: number;
+  rider_heading?: number;
+  status: 'assigned' | 'picked_up' | 'delivered' | 'cancelled';
+  tracking_url: string;
+  created_at: string;
+  updated_at: string;
+  rider?: Rider; // Joined field
+  order?: Order; // Joined field
 }

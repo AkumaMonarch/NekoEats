@@ -5,6 +5,7 @@ import { settingsService } from '../../services/settingsService';
 import { storageService } from '../../services/storageService';
 import { StoreSettings, WeeklySchedule, DaySchedule } from '../../lib/types';
 import { useTheme } from '../../contexts/ThemeContext';
+import { extractCoordinates } from '../../lib/utils';
 
 const defaultSchedule: WeeklySchedule = {
   monday: { isOpen: true, open: '09:00', close: '22:00' },
@@ -94,6 +95,19 @@ export default function AdminSettings() {
     });
   };
 
+  const handleGoogleMapUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    let updates: Partial<StoreSettings> = { google_maps_url: url };
+    
+    const coords = extractCoordinates(url);
+    if (coords) {
+      updates.latitude = coords.lat;
+      updates.longitude = coords.lng;
+    }
+    
+    setSettings(prev => prev ? ({ ...prev, ...updates }) : null);
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
@@ -157,7 +171,7 @@ export default function AdminSettings() {
                 <span className={`material-symbols-outlined text-slate-400 transition-transform ${isBrandingOpen ? 'rotate-180' : ''}`}>expand_more</span>
             </div>
             
-            <div className={`bg-white dark:bg-[#1e1411] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${isBrandingOpen ? 'max-h-[800px] opacity-100 p-4' : 'max-h-0 opacity-0 border-none'}`}>
+            <div className={`bg-white dark:bg-[#1e1411] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${isBrandingOpen ? 'max-h-[1200px] opacity-100 p-4' : 'max-h-0 opacity-0 border-none'}`}>
                 <div className="space-y-4">
                     <div>
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Restaurant Name</label>
@@ -179,6 +193,34 @@ export default function AdminSettings() {
                             placeholder="e.g. 57665303"
                         />
                         <p className="text-[10px] text-slate-400 mt-1">Used for WhatsApp/Telegram order links</p>
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Address</label>
+                        <textarea 
+                            value={settings?.address || ''} 
+                            onChange={(e) => setSettings(prev => prev ? ({ ...prev, address: e.target.value }) : null)}
+                            className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium resize-none h-24" 
+                            placeholder="Enter restaurant address"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Google Maps URL</label>
+                        <input 
+                            type="text" 
+                            value={settings?.google_maps_url || ''} 
+                            onChange={handleGoogleMapUrlChange}
+                            className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium" 
+                            placeholder="Paste Google Maps Link"
+                        />
+                        {settings?.latitude && settings?.longitude && (
+                            <p className="text-[10px] text-green-500 mt-1 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                                Location detected: {settings.latitude.toFixed(6)}, {settings.longitude.toFixed(6)}
+                            </p>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-1">Paste a Google Maps link to automatically detect GPS coordinates</p>
                     </div>
 
                     <div>
@@ -381,7 +423,7 @@ export default function AdminSettings() {
                 <span className={`material-symbols-outlined text-slate-400 transition-transform ${isServiceOptionsOpen ? 'rotate-180' : ''}`}>expand_more</span>
             </div>
             
-            <div className={`bg-white dark:bg-[#1e1411] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${isServiceOptionsOpen ? 'max-h-[300px] opacity-100 p-4' : 'max-h-0 opacity-0 border-none'}`}>
+            <div className={`bg-white dark:bg-[#1e1411] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${isServiceOptionsOpen ? 'max-h-[500px] opacity-100 p-4' : 'max-h-0 opacity-0 border-none'}`}>
                 <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
                         <div className="flex items-center gap-3">
@@ -400,6 +442,43 @@ export default function AdminSettings() {
                             <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings?.is_delivery_enabled ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
                         </div>
                     </div>
+
+                    {settings?.is_delivery_enabled && (
+                        <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 space-y-3">
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Delivery Fee Calculation</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Base Fee (Rs)</label>
+                                    <input 
+                                        type="number" 
+                                        value={settings?.delivery_base_fee || 0} 
+                                        onChange={(e) => {
+                                            const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                            setSettings(prev => prev ? ({ ...prev, delivery_base_fee: val }) : null);
+                                        }}
+                                        className="w-full bg-white dark:bg-black/20 border-none rounded-lg p-2 text-sm font-medium" 
+                                        placeholder="50"
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Per KM Fee (Rs)</label>
+                                    <input 
+                                        type="number" 
+                                        value={settings?.delivery_per_km_fee || 0} 
+                                        onChange={(e) => {
+                                            const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                            setSettings(prev => prev ? ({ ...prev, delivery_per_km_fee: val }) : null);
+                                        }}
+                                        className="w-full bg-white dark:bg-black/20 border-none rounded-lg p-2 text-sm font-medium" 
+                                        placeholder="15"
+                                        min="0"
+                                    />
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-slate-400">Total Fee = Base Fee + (Per KM × Distance)</p>
+                        </div>
+                    )}
 
                     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
                         <div className="flex items-center gap-3">
@@ -452,7 +531,10 @@ export default function AdminSettings() {
                             <input 
                                 type="number" 
                                 value={settings?.vat_percentage || 0} 
-                                onChange={(e) => setSettings(prev => prev ? ({ ...prev, vat_percentage: parseFloat(e.target.value) }) : null)}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                    setSettings(prev => prev ? ({ ...prev, vat_percentage: val }) : null);
+                                }}
                                 className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-xl p-3 text-sm font-medium text-slate-900 dark:text-white" 
                                 placeholder="e.g. 15"
                                 min="0"

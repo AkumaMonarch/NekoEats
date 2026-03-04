@@ -1,20 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../store/cartStore';
 import { Link } from 'react-router-dom';
-import { cn } from '../lib/utils';
+import { cn, extractCoordinates } from '../lib/utils';
 import { orderService } from '../services/orderService';
 import { useStoreSettings } from '../hooks/useStoreSettings';
+import LocationPicker from '../components/LocationPicker';
 
 export default function Cart() {
   const { items, removeItem, updateQuantity, total, clearCart } = useCartStore();
-  const [step, setStep] = useState<'cart' | 'contact' | 'review' | 'success'>('cart');
-  const [contact, setContact] = useState({ name: '', phone: '', address: '', notes: '' });
+  const [step, setStep] = useState<'cart' | 'service' | 'contact' | 'review' | 'success'>('cart');
+  const [contact, setContact] = useState({ name: '', phone: '', address: '', notes: '', googleMapsLink: '' });
   const [loading, setLoading] = useState(false);
-  const [serviceOption, setServiceOption] = useState<'delivery' | 'pickup'>('delivery');
+  const [serviceOption, setServiceOption] = useState<'delivery' | 'pickup'>('pickup');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mobile'>('cash');
   const { settings } = useStoreSettings();
   const [hasScrolledBottom, setHasScrolledBottom] = useState(false);
   const [orderCode, setOrderCode] = useState<string | null>(null);
+  
+  // New state for delivery
+  const [deliveryFee, setDeliveryFee] = useState(50); // Base fee default
+  const [deliveryLat, setDeliveryLat] = useState<number | null>(null);
+  const [deliveryLng, setDeliveryLng] = useState<number | null>(null);
+  const [deliveryDistance, setDeliveryDistance] = useState<number | null>(null);
 
   useEffect(() => {
     const checkScroll = () => {
@@ -36,9 +43,9 @@ export default function Cart() {
   }, [step, items]);
 
   const cartTotal = total();
-  const deliveryFee = serviceOption === 'delivery' ? 3.99 : 0;
+  const currentDeliveryFee = serviceOption === 'delivery' ? deliveryFee : 0;
   const vatAmount = settings?.vat_enabled ? (cartTotal * (settings.vat_percentage || 0) / 100) : 0;
-  const finalTotal = cartTotal + deliveryFee + vatAmount;
+  const finalTotal = cartTotal + currentDeliveryFee + vatAmount;
   const isOpen = settings?.is_open ?? true;
 
   const handleCheckout = () => {
@@ -47,7 +54,15 @@ export default function Cart() {
         alert('Sorry, the store is currently closed.');
         return;
     }
-    setStep('contact');
+    setStep('service');
+  };
+
+  const handleLocationSelect = (location: { address: string; lat: number; lng: number; distance: number; deliveryFee: number }) => {
+      setContact(prev => ({ ...prev, address: location.address }));
+      setDeliveryLat(location.lat);
+      setDeliveryLng(location.lng);
+      setDeliveryDistance(location.distance);
+      setDeliveryFee(location.deliveryFee);
   };
 
   const handlePlaceOrder = async () => {
@@ -69,7 +84,11 @@ export default function Cart() {
             payment_method: paymentMethod,
             service_option: serviceOption,
             delivery_address: contact.address,
-            notes: contact.notes
+            delivery_lat: deliveryLat || undefined,
+            delivery_lng: deliveryLng || undefined,
+            google_maps_link: contact.googleMapsLink,
+            notes: contact.notes,
+            // We could also save delivery_fee if the schema supported it, but it's part of total usually or separate
         });
 
         setOrderCode(order.order_code);
@@ -77,8 +96,6 @@ export default function Cart() {
         
         setTimeout(() => {
             clearCart();
-            // No redirect, just clear cart and let user see success screen
-            // window.location.href = '/'; // Or redirect to home after a longer delay if desired
         }, 3000);
     } catch (error) {
         console.error('Failed to place order:', error);
@@ -91,9 +108,12 @@ export default function Cart() {
   const handleClearCart = () => {
     clearCart();
     setStep('cart');
-    setContact({ name: '', phone: '', address: '', notes: '' });
-    setServiceOption('delivery');
+    setContact({ name: '', phone: '', address: '', notes: '', googleMapsLink: '' });
+    setServiceOption('pickup');
     setPaymentMethod('cash');
+    setDeliveryFee(50);
+    setDeliveryLat(null);
+    setDeliveryLng(null);
   };
 
   if (step === 'success') {
@@ -126,7 +146,7 @@ export default function Cart() {
                 <button onClick={() => setStep('contact')} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
                     <span className="material-symbols-outlined text-primary">arrow_back_ios_new</span>
                 </button>
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white">Review Order</h1>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Review Order</h1>
                 <button onClick={handleClearCart} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                     <span className="material-symbols-outlined">delete</span>
                 </button>
@@ -142,28 +162,28 @@ export default function Cart() {
                 <div className="space-y-6">
                     <section className="bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Contact Details</h2>
-                            <button onClick={() => setStep('contact')} className="text-primary text-xs font-bold uppercase tracking-wider">Edit</button>
+                            <h2 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider">Contact Details</h2>
+                            <button onClick={() => setStep('contact')} className="text-primary text-sm font-bold uppercase tracking-wider">Edit</button>
                         </div>
                         <div className="space-y-2">
                             <div>
-                                <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Name</p>
-                                <p className="text-slate-900 dark:text-white font-medium">{contact.name}</p>
+                                <p className="text-sm text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Name</p>
+                                <p className="text-slate-900 dark:text-white font-medium text-base">{contact.name}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Phone</p>
-                                <p className="text-slate-900 dark:text-white font-medium">{contact.phone}</p>
+                                <p className="text-sm text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Phone</p>
+                                <p className="text-slate-900 dark:text-white font-medium text-base">{contact.phone}</p>
                             </div>
                             {serviceOption === 'delivery' && (
                                 <div>
-                                    <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Address</p>
-                                    <p className="text-slate-900 dark:text-white font-medium">{contact.address}</p>
+                                    <p className="text-sm text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Address</p>
+                                    <p className="text-slate-900 dark:text-white font-medium text-base">{contact.address}</p>
                                 </div>
                             )}
                             {contact.notes && (
                                 <div>
-                                    <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Notes</p>
-                                    <p className="text-slate-900 dark:text-white font-medium">{contact.notes}</p>
+                                    <p className="text-sm text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold">Notes</p>
+                                    <p className="text-slate-900 dark:text-white font-medium text-base">{contact.notes}</p>
                                 </div>
                             )}
                         </div>
@@ -171,12 +191,12 @@ export default function Cart() {
 
                     <section className="bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Order Details</h2>
-                            <button onClick={() => setStep('cart')} className="text-primary text-xs font-bold uppercase tracking-wider">Edit</button>
+                            <h2 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider">Order Details</h2>
+                            <button onClick={() => setStep('service')} className="text-primary text-sm font-bold uppercase tracking-wider">Edit</button>
                         </div>
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Service Option</p>
+                                <p className="text-sm text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Service Option</p>
                                 <div className="flex items-center gap-2">
                                     <span className="material-symbols-outlined text-primary text-lg">
                                         {serviceOption === 'delivery' ? 'local_shipping' : 'store'}
@@ -185,7 +205,7 @@ export default function Cart() {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Payment</p>
+                                <p className="text-sm text-slate-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Payment</p>
                                 <div className="flex items-center gap-2 justify-end">
                                     <span className="material-symbols-outlined text-primary text-lg">
                                         {paymentMethod === 'cash' ? 'payments' : 'account_balance_wallet'}
@@ -196,7 +216,7 @@ export default function Cart() {
                         </div>
                     </section>
 
-                    <section className="bg-white dark:bg-white/5 p-5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+                    <section className="bg-white dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Order Summary</h2>
                             <button onClick={() => setStep('cart')} className="text-primary text-xs font-bold uppercase tracking-wider">Edit</button>
@@ -213,9 +233,11 @@ export default function Cart() {
                                                 <span className="text-primary mr-1">{item.quantity}x</span>
                                                 {item.name}
                                             </h3>
-                                            <p className="text-sm font-bold text-slate-900 dark:text-white">Rs {(item.price * item.quantity).toFixed(2)}</p>
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                                {(item.price * item.quantity) === 0 ? 'Free' : `Rs ${(item.price * item.quantity).toFixed(2)}`}
+                                            </p>
                                         </div>
-                                        <p className="text-[11px] text-slate-500 dark:text-gray-400 line-clamp-1">
+                                        <p className="text-xs text-slate-500 dark:text-gray-400 line-clamp-1">
                                             {item.selectedVariant?.name}
                                             {item.selectedAddons.length > 0 && `, ${item.selectedAddons.map(a => a.name).join(', ')}`}
                                         </p>
@@ -223,10 +245,12 @@ export default function Cart() {
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-white/10 space-y-2">
+                        <div className="mt-4 pt-3 border-t border-dashed border-gray-200 dark:border-white/10 space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-500 dark:text-gray-400">Subtotal</span>
-                                <span className="font-semibold text-slate-900 dark:text-white">Rs {cartTotal.toFixed(2)}</span>
+                                <span className="font-semibold text-slate-900 dark:text-white">
+                                    {cartTotal === 0 ? 'Free' : `Rs ${cartTotal.toFixed(2)}`}
+                                </span>
                             </div>
                             {settings?.vat_enabled && (
                                 <div className="flex justify-between text-sm py-1">
@@ -236,11 +260,15 @@ export default function Cart() {
                             )}
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-500 dark:text-gray-400">Delivery Fee</span>
-                                <span className="font-semibold text-slate-900 dark:text-white">Rs {deliveryFee.toFixed(2)}</span>
+                                <span className="font-semibold text-slate-900 dark:text-white">
+                                    {currentDeliveryFee === 0 ? 'Free' : `Rs ${currentDeliveryFee.toFixed(2)}`}
+                                </span>
                             </div>
                             <div className="flex justify-between items-end pt-2">
                                 <span className="text-sm font-bold text-slate-900 dark:text-white">Total</span>
-                                <span className="text-xl font-black text-primary">Rs {finalTotal.toFixed(2)}</span>
+                                <span className="text-xl font-black text-primary">
+                                    {finalTotal === 0 ? 'Free' : `Rs ${finalTotal.toFixed(2)}`}
+                                </span>
                             </div>
                         </div>
                     </section>
@@ -275,14 +303,118 @@ export default function Cart() {
     );
   }
 
-  if (step === 'contact') {
+  if (step === 'service') {
     return (
         <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark">
             <header className="bg-white dark:bg-[#1c110c] border-b border-gray-200 dark:border-white/5 sticky top-0 z-10 px-4 py-4 flex items-center justify-between">
                 <button onClick={() => setStep('cart')} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
                     <span className="material-symbols-outlined text-primary">arrow_back_ios_new</span>
                 </button>
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white">Contact Details</h1>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Service Option</h1>
+                <button onClick={handleClearCart} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <span className="material-symbols-outlined">delete</span>
+                </button>
+            </header>
+
+            <main className="flex-1 px-6 pt-6 max-w-md mx-auto w-full pb-40">
+                <div className="flex justify-center gap-2 mb-8">
+                    <div className="h-1.5 w-12 rounded-full bg-primary"></div>
+                    <div className="h-1.5 w-8 rounded-full bg-primary/20"></div>
+                    <div className="h-1.5 w-8 rounded-full bg-primary/20"></div>
+                </div>
+
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">How would you like it?</h2>
+                <p className="text-slate-500 dark:text-gray-400 text-sm mb-8">Choose between pickup or delivery.</p>
+
+                <div className="space-y-6">
+                    {/* Service Option */}
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                            <button 
+                                onClick={() => setServiceOption('pickup')}
+                                className={cn(
+                                    "p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all",
+                                    serviceOption === 'pickup' 
+                                        ? "border-primary bg-primary/5" 
+                                        : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
+                                )}
+                            >
+                                <span className="material-symbols-outlined text-2xl">store</span>
+                                <span className="font-bold text-base">Pickup</span>
+                            </button>
+                            <button 
+                                onClick={() => setServiceOption('delivery')}
+                                className={cn(
+                                    "p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all",
+                                    serviceOption === 'delivery' 
+                                        ? "border-primary bg-primary/5" 
+                                        : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
+                                )}
+                            >
+                                <span className="material-symbols-outlined text-2xl">local_shipping</span>
+                                <span className="font-bold text-base">Delivery</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {serviceOption === 'delivery' && (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                            <div className="space-y-2">
+                                <label className="text-base font-bold text-slate-900 dark:text-white ml-1">Delivery Location</label>
+                                <LocationPicker onLocationSelect={handleLocationSelect} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-base font-bold text-slate-900 dark:text-white ml-1">Address Details</label>
+                                <div className="relative">
+                                    <span className="material-symbols-outlined absolute left-4 top-4 text-gray-400">location_on</span>
+                                    <textarea 
+                                        value={contact.address}
+                                        onChange={(e) => setContact({...contact, address: e.target.value})}
+                                        className="w-full h-24 pl-12 pt-3 rounded-xl border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white focus:ring-primary focus:border-primary resize-none"
+                                        placeholder="Confirm or edit your address (e.g. Add Apt/Floor)"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </main>
+
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-background-dark/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/10 z-30">
+                {!hasScrolledBottom && (
+                    <div className="absolute bottom-full left-0 right-0 h-24 bg-gradient-to-t from-primary/20 to-transparent pointer-events-none animate-pulse" />
+                )}
+                <div className="max-w-md mx-auto space-y-3">
+                    <div className="flex justify-between px-2">
+                        <span className="text-slate-500 font-medium">Total</span>
+                        <span className="text-slate-900 dark:text-white font-bold text-lg">Rs {finalTotal.toFixed(2)}</span>
+                    </div>
+                    <button 
+                        onClick={() => setStep('contact')}
+                        disabled={(serviceOption === 'delivery' && !contact.address) || !hasScrolledBottom}
+                        className={cn(
+                            "w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all",
+                            ((serviceOption === 'delivery' && !contact.address) || !hasScrolledBottom) && "opacity-50 cursor-not-allowed grayscale"
+                        )}
+                    >
+                        <span>{hasScrolledBottom ? "Next Step" : "Scroll to Continue"}</span>
+                        <span className="material-symbols-outlined">{hasScrolledBottom ? "arrow_forward" : "keyboard_double_arrow_down"}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+  }
+
+  if (step === 'contact') {
+    return (
+        <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark">
+            <header className="bg-white dark:bg-[#1c110c] border-b border-gray-200 dark:border-white/5 sticky top-0 z-10 px-4 py-4 flex items-center justify-between">
+                <button onClick={() => setStep('service')} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                    <span className="material-symbols-outlined text-primary">arrow_back_ios_new</span>
+                </button>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Contact Details</h1>
                 <button onClick={handleClearCart} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                     <span className="material-symbols-outlined">delete</span>
                 </button>
@@ -292,6 +424,7 @@ export default function Cart() {
                 <div className="flex justify-center gap-2 mb-8">
                     <div className="h-1.5 w-8 rounded-full bg-primary/20"></div>
                     <div className="h-1.5 w-12 rounded-full bg-primary"></div>
+                    <div className="h-1.5 w-8 rounded-full bg-primary/20"></div>
                 </div>
 
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Verify contact details</h2>
@@ -299,7 +432,7 @@ export default function Cart() {
 
                 <div className="space-y-6">
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white ml-1">Full Name</label>
+                        <label className="text-base font-bold text-slate-900 dark:text-white ml-1">Full Name</label>
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">person</span>
                             <input 
@@ -313,7 +446,7 @@ export default function Cart() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white ml-1">Phone Number</label>
+                        <label className="text-base font-bold text-slate-900 dark:text-white ml-1">Phone Number</label>
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">smartphone</span>
                             <input 
@@ -326,23 +459,51 @@ export default function Cart() {
                         </div>
                     </div>
 
-                    {serviceOption === 'delivery' && (
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold text-slate-900 dark:text-white ml-1">Delivery Address</label>
-                            <div className="relative">
-                                <span className="material-symbols-outlined absolute left-4 top-4 text-gray-400">location_on</span>
-                                <textarea 
-                                    value={contact.address}
-                                    onChange={(e) => setContact({...contact, address: e.target.value})}
-                                    className="w-full h-24 pl-12 pt-3 rounded-xl border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white focus:ring-primary focus:border-primary resize-none"
-                                    placeholder="Enter your full delivery address"
-                                />
-                            </div>
+                    {/* Payment Method */}
+                    <div className="space-y-3 pt-4 border-t border-dashed border-gray-200 dark:border-white/10">
+                        <label className="text-base font-bold text-slate-900 dark:text-white ml-1">Payment Method</label>
+                        <div className="space-y-3">
+                            <button 
+                                onClick={() => setPaymentMethod('cash')}
+                                className={cn(
+                                    "w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all",
+                                    paymentMethod === 'cash' 
+                                        ? "border-primary bg-primary/5" 
+                                        : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
+                                )}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <span className="material-symbols-outlined text-2xl text-primary">payments</span>
+                                    <div className="text-left">
+                                        <p className="font-bold text-base">Cash</p>
+                                        <p className="text-xs text-slate-500">Pay with physical currency</p>
+                                    </div>
+                                </div>
+                                {paymentMethod === 'cash' && <span className="material-symbols-outlined text-primary">check_circle</span>}
+                            </button>
+                            <button 
+                                onClick={() => setPaymentMethod('mobile')}
+                                className={cn(
+                                    "w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all",
+                                    paymentMethod === 'mobile' 
+                                        ? "border-primary bg-primary/5" 
+                                        : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
+                                )}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <span className="material-symbols-outlined text-2xl text-primary">account_balance_wallet</span>
+                                    <div className="text-left">
+                                        <p className="font-bold text-base">Mobile Payment</p>
+                                        <p className="text-xs text-slate-500">Apple Pay or Digital Wallets</p>
+                                    </div>
+                                </div>
+                                {paymentMethod === 'mobile' && <span className="material-symbols-outlined text-primary">check_circle</span>}
+                            </button>
                         </div>
-                    )}
+                    </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white ml-1">Special Notes (Optional)</label>
+                        <label className="text-base font-bold text-slate-900 dark:text-white ml-1">Special Notes (Optional)</label>
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-4 top-4 text-gray-400">chat</span>
                             <textarea 
@@ -367,10 +528,10 @@ export default function Cart() {
                     </div>
                     <button 
                         onClick={() => setStep('review')}
-                        disabled={!contact.name || !contact.phone || (serviceOption === 'delivery' && !contact.address) || !hasScrolledBottom}
+                        disabled={!contact.name || !contact.phone || !hasScrolledBottom}
                         className={cn(
                             "w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all",
-                            (!contact.name || !contact.phone || (serviceOption === 'delivery' && !contact.address) || !hasScrolledBottom) && "opacity-50 cursor-not-allowed grayscale"
+                            (!contact.name || !contact.phone || !hasScrolledBottom) && "opacity-50 cursor-not-allowed grayscale"
                         )}
                     >
                         <span>{hasScrolledBottom ? "Review Order" : "Scroll to Review"}</span>
@@ -388,7 +549,7 @@ export default function Cart() {
         <button onClick={() => window.history.back()} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center">
             <span className="material-symbols-outlined text-slate-900 dark:text-white">arrow_back_ios_new</span>
         </button>
-        <h1 className="font-bold text-lg text-slate-900 dark:text-white">Checkout</h1>
+        <h1 className="font-bold text-xl text-slate-900 dark:text-white">Checkout</h1>
         {items.length > 0 ? (
             <button onClick={handleClearCart} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <span className="material-symbols-outlined">delete</span>
@@ -411,7 +572,7 @@ export default function Cart() {
         ) : (
             <>
                 <section className="space-y-3">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 px-1">Order Summary</h2>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 px-1">Order Summary</h2>
                     {items.map((item) => (
                         <div key={item.cartId} className="bg-white dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm flex gap-4">
                             <div className="h-16 w-16 bg-gray-100 dark:bg-white/5 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
@@ -419,10 +580,12 @@ export default function Cart() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-start">
-                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{item.name}</h3>
-                                    <p className="text-sm font-bold text-primary">Rs {(item.price + item.selectedAddons.reduce((s, a) => s + a.price, 0)).toFixed(2)}</p>
+                                    <h3 className="text-base font-bold text-slate-900 dark:text-white truncate">{item.name}</h3>
+                                    <p className="text-base font-bold text-primary">
+                                        {(item.price + item.selectedAddons.reduce((s, a) => s + a.price, 0)) === 0 ? 'Free' : `Rs ${(item.price + item.selectedAddons.reduce((s, a) => s + a.price, 0)).toFixed(2)}`}
+                                    </p>
                                 </div>
-                                <p className="text-[11px] text-slate-500 dark:text-gray-400 mt-1 line-clamp-1">
+                                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1 line-clamp-1">
                                     {item.selectedVariant?.name}
                                     {item.selectedAddons.length > 0 && `, ${item.selectedAddons.map(a => a.name).join(', ')}`}
                                 </p>
@@ -445,120 +608,14 @@ export default function Cart() {
                     ))}
                 </section>
 
-                {/* Service Option */}
-                <section className="space-y-3">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 px-1">Service Option</h2>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button 
-                            onClick={() => setServiceOption('delivery')}
-                            className={cn(
-                                "p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all",
-                                serviceOption === 'delivery' 
-                                    ? "border-primary bg-primary/5" 
-                                    : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
-                            )}
-                        >
-                            <div className={cn(
-                                "h-10 w-10 rounded-full flex items-center justify-center",
-                                serviceOption === 'delivery' ? "bg-primary/10 text-primary" : "bg-gray-100 dark:bg-white/10 text-gray-400"
-                            )}>
-                                <span className="material-symbols-outlined">local_shipping</span>
-                            </div>
-                            <div className="text-center">
-                                <p className={cn("font-bold text-sm", serviceOption === 'delivery' ? "text-primary" : "text-slate-900 dark:text-white")}>Delivery</p>
-                                <p className="text-[10px] text-slate-500">Delivery to your door</p>
-                            </div>
-                        </button>
-                        <button 
-                            onClick={() => setServiceOption('pickup')}
-                            className={cn(
-                                "p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all",
-                                serviceOption === 'pickup' 
-                                    ? "border-primary bg-primary/5" 
-                                    : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
-                            )}
-                        >
-                            <div className={cn(
-                                "h-10 w-10 rounded-full flex items-center justify-center",
-                                serviceOption === 'pickup' ? "bg-primary/10 text-primary" : "bg-gray-100 dark:bg-white/10 text-gray-400"
-                            )}>
-                                <span className="material-symbols-outlined">store</span>
-                            </div>
-                            <div className="text-center">
-                                <p className={cn("font-bold text-sm", serviceOption === 'pickup' ? "text-primary" : "text-slate-900 dark:text-white")}>Pickup</p>
-                                <p className="text-[10px] text-slate-500">At the counter</p>
-                            </div>
-                        </button>
-                    </div>
-                </section>
+                {/* Service Option and Payment Method moved to Contact step */}
 
-                {/* Payment Method */}
-                <section className="space-y-3">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 px-1">Payment Method</h2>
-                    <div className="space-y-3">
-                        <button 
-                            onClick={() => setPaymentMethod('cash')}
-                            className={cn(
-                                "w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all",
-                                paymentMethod === 'cash' 
-                                    ? "border-primary bg-primary/5" 
-                                    : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
-                            )}
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className={cn(
-                                    "h-10 w-10 rounded-full flex items-center justify-center",
-                                    paymentMethod === 'cash' ? "bg-primary/10 text-primary" : "bg-gray-100 dark:bg-white/10 text-gray-400"
-                                )}>
-                                    <span className="material-symbols-outlined">payments</span>
-                                </div>
-                                <div className="text-left">
-                                    <p className={cn("font-bold text-sm", paymentMethod === 'cash' ? "text-primary" : "text-slate-900 dark:text-white")}>Cash</p>
-                                    <p className="text-[10px] text-slate-500">Pay with physical currency</p>
-                                </div>
-                            </div>
-                            <div className={cn(
-                                "h-5 w-5 rounded-full border-2 flex items-center justify-center",
-                                paymentMethod === 'cash' ? "border-primary" : "border-gray-300"
-                            )}>
-                                {paymentMethod === 'cash' && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
-                            </div>
-                        </button>
-                        <button 
-                            onClick={() => setPaymentMethod('mobile')}
-                            className={cn(
-                                "w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all",
-                                paymentMethod === 'mobile' 
-                                    ? "border-primary bg-primary/5" 
-                                    : "border-gray-100 dark:border-white/5 bg-white dark:bg-white/5"
-                            )}
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className={cn(
-                                    "h-10 w-10 rounded-full flex items-center justify-center",
-                                    paymentMethod === 'mobile' ? "bg-primary/10 text-primary" : "bg-gray-100 dark:bg-white/10 text-gray-400"
-                                )}>
-                                    <span className="material-symbols-outlined">account_balance_wallet</span>
-                                </div>
-                                <div className="text-left">
-                                    <p className={cn("font-bold text-sm", paymentMethod === 'mobile' ? "text-primary" : "text-slate-900 dark:text-white")}>Mobile Payment</p>
-                                    <p className="text-[10px] text-slate-500">Apple Pay or Digital Wallets</p>
-                                </div>
-                            </div>
-                            <div className={cn(
-                                "h-5 w-5 rounded-full border-2 flex items-center justify-center",
-                                paymentMethod === 'mobile' ? "border-primary" : "border-gray-300"
-                            )}>
-                                {paymentMethod === 'mobile' && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
-                            </div>
-                        </button>
-                    </div>
-                </section>
-
-                <section className="bg-white dark:bg-white/5 rounded-2xl p-5 space-y-3 border border-gray-100 dark:border-white/5 shadow-sm">
+                <section className="bg-white dark:bg-white/5 rounded-2xl p-4 space-y-2 border border-gray-100 dark:border-white/5 shadow-sm">
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-500 dark:text-gray-400">Subtotal</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">Rs {cartTotal.toFixed(2)}</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                            {cartTotal === 0 ? 'Free' : `Rs ${cartTotal.toFixed(2)}`}
+                        </span>
                     </div>
                     {settings?.vat_enabled && (
                         <div className="flex justify-between text-sm py-1">
@@ -566,14 +623,12 @@ export default function Cart() {
                             <span className="font-bold text-slate-900 dark:text-white">Rs {vatAmount.toFixed(2)}</span>
                         </div>
                     )}
-                    <div className="flex justify-between text-sm">
-                        <span className="text-slate-500 dark:text-gray-400">Delivery Fee</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">Rs {deliveryFee.toFixed(2)}</span>
-                    </div>
-                    <div className="pt-4 border-t border-dashed border-gray-200 dark:border-white/10 flex justify-between items-end">
+                    <div className="pt-3 border-t border-dashed border-gray-200 dark:border-white/10 flex justify-between items-end">
                         <div>
-                            <p className="text-xs text-gray-400 uppercase tracking-tighter font-bold">Total Amount</p>
-                            <p className="text-3xl font-black text-primary">Rs {finalTotal.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 uppercase tracking-wide font-bold">Total (excl. delivery)</p>
+                            <p className="text-2xl font-black text-primary">
+                                {finalTotal === 0 ? 'Free' : `Rs ${finalTotal.toFixed(2)}`}
+                            </p>
                         </div>
                     </div>
                 </section>

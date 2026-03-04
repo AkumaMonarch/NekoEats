@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '../../lib/utils';
 import { orderService } from '../../services/orderService';
+import { riderService } from '../../services/riderService';
+import { deliveryService } from '../../services/deliveryService';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '../../lib/supabase';
 import { useDraggableScroll } from '../../hooks/useDraggableScroll';
 import { ReceiptPrinter } from '../../components/ReceiptPrinter';
 import { useStoreSettings } from '../../hooks/useStoreSettings';
 import OrderStatusHistoryModal from '../../components/OrderStatusHistoryModal';
-import { Order as BaseOrder } from '../../lib/types';
+import { Order as BaseOrder, Rider } from '../../lib/types';
 
 interface Order extends Omit<BaseOrder, 'items'> {
   order_items: any[];
@@ -22,8 +24,13 @@ export default function AdminOrders() {
   const [searchQuery, setSearchQuery] = useState('');
   const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
   const [historyOrder, setHistoryOrder] = useState<Order | null>(null);
+  const [isRiderModalOpen, setIsRiderModalOpen] = useState(false);
+  const [selectedOrderForDelivery, setSelectedOrderForDelivery] = useState<Order | null>(null);
+  const [availableRiders, setAvailableRiders] = useState<Rider[]>([]);
+  const [assigningRider, setAssigningRider] = useState(false);
   const [orderCounts, setOrderCounts] = useState({
     pending: 0,
+    received: 0,
     preparing: 0,
     ready: 0,
     completed: 0,
@@ -40,7 +47,6 @@ export default function AdminOrders() {
     const subscription = supabase
       .channel('public:orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-        console.log('Real-time update:', payload);
         fetchOrders(); // Refresh data on any change
       })
       .subscribe();
@@ -57,7 +63,7 @@ export default function AdminOrders() {
         orderService.getOrderCounts()
       ]);
       setOrders(ordersData as any[]);
-      setOrderCounts(countsData);
+      setOrderCounts(countsData as any);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
     } finally {
@@ -82,6 +88,56 @@ export default function AdminOrders() {
     } catch (error) {
       console.error('Failed to revert status:', error);
       alert('Failed to revert status');
+    }
+  };
+
+  const openAssignRiderModal = async (order: Order) => {
+    setSelectedOrderForDelivery(order);
+    try {
+      const riders = await riderService.getAvailableRiders();
+      setAvailableRiders(riders);
+      setIsRiderModalOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch riders:', error);
+      alert('Failed to fetch available riders');
+    }
+  };
+
+  const handleAssignRider = async (riderId: string) => {
+    if (!selectedOrderForDelivery) return;
+    setAssigningRider(true);
+    try {
+      // Use delivery_lat/lng if available, otherwise fallback to 0,0 (which will fail distance calc if not handled)
+      // We assume order has coordinates or we can't calculate fee accurately.
+      // If not, we might need to geocode or just use 0 distance.
+      const lat = selectedOrderForDelivery.delivery_lat || 0;
+      const lng = selectedOrderForDelivery.delivery_lng || 0;
+      const address = selectedOrderForDelivery.delivery_address || 'Unknown Address';
+
+      if (lat === 0 && lng === 0) {
+        if (!window.confirm("This order has no delivery coordinates (Google Maps Link was not provided). The delivery fee calculation might be inaccurate. Proceed?")) {
+            setAssigningRider(false);
+            return;
+        }
+      }
+
+      await deliveryService.createDelivery(
+        selectedOrderForDelivery.id,
+        riderId,
+        address,
+        lat,
+        lng
+      );
+      
+      setIsRiderModalOpen(false);
+      setSelectedOrderForDelivery(null);
+      fetchOrders();
+      alert('Rider assigned successfully!');
+    } catch (error) {
+      console.error('Failed to assign rider:', error);
+      alert('Failed to assign rider. Ensure restaurant location is set in settings.');
+    } finally {
+      setAssigningRider(false);
     }
   };
 
@@ -148,7 +204,7 @@ export default function AdminOrders() {
             className="flex gap-2 overflow-x-auto hide-scrollbar cursor-grab select-none"
         >
             {['All', 'Received', 'Preparing', 'Ready', 'Completed', 'Cancelled'].map((tab) => {
-                const statusKey = tab === 'Received' ? 'pending' : tab.toLowerCase();
+                const statusKey = tab.toLowerCase();
                 const count = statusKey === 'all' ? 0 : orderCounts[statusKey as keyof typeof orderCounts] || 0;
                 
                 return (
@@ -157,7 +213,7 @@ export default function AdminOrders() {
                         onClick={() => setActiveTab(statusKey)}
                         className={cn(
                             "px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors flex items-center gap-2",
-                            (activeTab === 'pending' && tab === 'Received') || activeTab === tab.toLowerCase()
+                            activeTab === tab.toLowerCase()
                                 ? "bg-primary text-white shadow-lg shadow-primary/20"
                                 : "bg-gray-100 dark:bg-white/5 text-slate-500 dark:text-slate-400"
                         )}
@@ -166,7 +222,7 @@ export default function AdminOrders() {
                         {tab !== 'All' && count > 0 && (
                             <span className={cn(
                                 "h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center text-[10px]",
-                                (activeTab === 'pending' && tab === 'Received') || activeTab === tab.toLowerCase()
+                                activeTab === tab.toLowerCase()
                                     ? "bg-white text-primary"
                                     : "bg-gray-200 dark:bg-white/10 text-slate-600 dark:text-slate-300"
                             )}>
@@ -221,12 +277,32 @@ export default function AdminOrders() {
                                         <span>•</span>
                                         <span>{order.order_items.length} Items</span>
                                     </div>
+                                    {order.service_option === 'delivery' && (
+                                        <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                            <div className="flex items-start gap-1">
+                                                <span className="material-symbols-outlined text-sm shrink-0">location_on</span>
+                                                <span className="line-clamp-2">{order.delivery_address || 'No address provided'}</span>
+                                            </div>
+                                            {order.google_maps_link && (
+                                                <a 
+                                                    href={order.google_maps_link} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-primary hover:underline mt-1 ml-5 font-medium"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">map</span>
+                                                    View on Maps
+                                                </a>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex flex-col items-end gap-1">
                                 <span className={cn(
                                     "text-[10px] font-bold uppercase tracking-wider",
-                                    order.status === 'pending' ? "text-primary" : "text-slate-400"
+                                    order.status === 'received' ? "text-primary" : "text-slate-400"
                                 )}>{formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}</span>
                                 {expandedOrder !== order.id && (
                                     <span className="material-symbols-outlined text-slate-400">expand_more</span>
@@ -240,8 +316,8 @@ export default function AdminOrders() {
                             {/* Status Tracker */}
                             <div className="flex justify-between items-center py-6 px-2 relative">
                                 <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 dark:bg-white/10 -z-10 -translate-y-1/2"></div>
-                                {['pending', 'preparing', 'ready', 'completed'].map((step, idx) => {
-                                    const steps = ['pending', 'preparing', 'ready', 'completed'];
+                                {['received', 'preparing', 'ready', 'completed'].map((step, idx) => {
+                                    const steps = ['received', 'preparing', 'ready', 'completed'];
                                     const currentIdx = steps.indexOf(order.status);
                                     // If order status is not in the list (e.g. cancelled), handle gracefully
                                     if (currentIdx === -1 && order.status !== 'cancelled') return null;
@@ -251,8 +327,8 @@ export default function AdminOrders() {
                                     const isCurrent = stepIdx === currentIdx;
 
                                     let label = step;
-                                    if (step === 'pending') label = 'Received';
-                                    if (step === 'preparing') label = 'In Kitchen';
+                                    if (step === 'received') label = 'Received';
+                                    if (step === 'preparing') label = 'Preparing';
                                     if (step === 'ready') label = 'Ready';
                                     if (step === 'completed') label = 'Done';
                                     
@@ -267,7 +343,7 @@ export default function AdminOrders() {
                                                     <span className="absolute inset-0 rounded-full border-2 border-white/20 animate-ping"></span>
                                                 )}
                                                 <span className="material-symbols-outlined text-sm">
-                                                    {step === 'pending' && 'receipt_long'}
+                                                    {step === 'received' && 'receipt_long'}
                                                     {step === 'preparing' && 'skillet'}
                                                     {step === 'ready' && 'check'}
                                                     {step === 'completed' && 'done_all'}
@@ -324,7 +400,9 @@ export default function AdminOrders() {
                                                 </div>
                                             )}
                                         </div>
-                                        <span className="font-bold text-slate-400">Rs {item.price.toFixed(2)}</span>
+                                        <span className="font-bold text-slate-400">
+                                            {item.price === 0 ? 'Free' : `Rs ${item.price.toFixed(2)}`}
+                                        </span>
                                     </div>
                                 ))}
                                 <div className="pt-4 border-t border-dashed border-gray-200 dark:border-white/10 space-y-2">
@@ -334,9 +412,17 @@ export default function AdminOrders() {
                                             <span className="font-bold text-sm text-slate-500 dark:text-slate-400">Rs {order.vat_amount?.toFixed(2)}</span>
                                         </div>
                                     )}
+                                    {order.delivery_fee > 0 && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-bold text-xs text-slate-400 uppercase">Delivery Fee</span>
+                                            <span className="font-bold text-sm text-slate-500 dark:text-slate-400">Rs {order.delivery_fee?.toFixed(2)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between items-center">
                                         <span className="font-bold text-sm">TOTAL</span>
-                                        <span className="font-black text-lg text-primary">Rs {order.total.toFixed(2)}</span>
+                                        <span className="font-black text-lg text-primary">
+                                            {(order.total + (order.delivery_fee || 0)) === 0 ? 'Free' : `Rs ${(order.total + (order.delivery_fee || 0)).toFixed(2)}`}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -368,7 +454,7 @@ export default function AdminOrders() {
                                         </button>
                                     </div>
                                     
-                                    {order.status === 'pending' && (
+                                    {order.status === 'received' && (
                                         <button 
                                             onClick={() => handleStatusUpdate(order.id, 'preparing')}
                                             className="w-full py-4 rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
@@ -395,6 +481,16 @@ export default function AdminOrders() {
                                             <span className="material-symbols-outlined text-lg">done_all</span>
                                         </button>
                                     )}
+                                    
+                                    {order.service_option === 'delivery' && order.status !== 'completed' && order.status !== 'cancelled' && (
+                                        <button 
+                                            onClick={() => openAssignRiderModal(order)}
+                                            className="w-full py-3 rounded-xl bg-orange-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+                                        >
+                                            <span className="material-symbols-outlined text-lg">two_wheeler</span>
+                                            ASSIGN RIDER
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -417,6 +513,46 @@ export default function AdminOrders() {
           onClose={() => setHistoryOrder(null)}
           onRevert={handleRevertStatus}
         />
+      )}
+
+      {isRiderModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1e1411] w-full max-w-md rounded-3xl p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h2 className="text-xl font-bold mb-4">Assign Rider</h2>
+            <p className="text-sm text-slate-500 mb-6">Select an available rider for this delivery.</p>
+            
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              {availableRiders.length === 0 ? (
+                <p className="text-center text-slate-400 py-4">No riders available.</p>
+              ) : (
+                availableRiders.map(rider => (
+                  <button
+                    key={rider.id}
+                    onClick={() => handleAssignRider(rider.id)}
+                    disabled={assigningRider}
+                    className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-left"
+                  >
+                    <div>
+                      <p className="font-bold">{rider.name}</p>
+                      <p className="text-xs text-slate-500">{rider.phone}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-bold bg-green-100 text-green-600 px-2 py-1 rounded-lg">AVAILABLE</span>
+                      <p className="text-[10px] text-slate-400 mt-1">{rider.total_deliveries} deliveries</p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+
+            <button
+              onClick={() => setIsRiderModalOpen(false)}
+              className="w-full mt-6 py-3 rounded-xl font-bold bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

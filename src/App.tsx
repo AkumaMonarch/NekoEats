@@ -14,6 +14,9 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminOrders from './pages/admin/Orders';
 import AdminMenu from './pages/admin/MenuEditor';
 import AdminCategories from './pages/admin/Categories';
+import AdminRiders from './pages/admin/Riders';
+import RiderDelivery from './pages/delivery/RiderDelivery';
+import TrackDelivery from './pages/delivery/TrackDelivery';
 import AdminSettings from './pages/admin/Settings';
 import AdminReports from './pages/admin/Reports';
 import AdminLogin from './pages/admin/Login';
@@ -33,6 +36,10 @@ function AppContent() {
         <Route path="/" element={<Home />} />
         <Route path="/menu" element={<Menu />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/track/:id" element={<TrackDelivery />} />
+
+        {/* Rider Routes */}
+        <Route path="/delivery/:id" element={<RiderDelivery />} />
 
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -40,6 +47,7 @@ function AppContent() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="riders" element={<AdminRiders />} />
           <Route path="menu" element={<AdminMenu />} />
           <Route path="categories" element={<AdminCategories />} />
           <Route path="settings" element={<AdminSettings />} />

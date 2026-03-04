@@ -81,8 +81,8 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                     <div className="absolute bottom-4 left-6 right-6">
                         <h2 className="text-2xl font-black text-white leading-tight mb-1">{item.name}</h2>
                         <span className="text-white/90 font-bold text-lg">
-                            Rs {basePrice.toFixed(2)}
-                            {settings?.vat_enabled && <span className="text-xs ml-1 opacity-70 font-normal">(+ VAT)</span>}
+                            {basePrice === 0 ? 'Free' : `Rs ${basePrice.toFixed(2)}`}
+                            {settings?.vat_enabled && basePrice > 0 && <span className="text-xs ml-1 opacity-70 font-normal">(+ VAT)</span>}
                         </span>
                     </div>
                 </div>
@@ -124,7 +124,9 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                                         <span className="font-bold text-sm text-slate-900 dark:text-white truncate">{variant.name}</span>
                                     </div>
                                     {variant.price > 0 && (
-                                        <span className="text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap ml-2">+ Rs {variant.price.toFixed(2)}</span>
+                                        <span className="text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap ml-2">
+                                            {item.price === 0 ? `Rs ${variant.price.toFixed(2)}` : `+ Rs ${variant.price.toFixed(2)}`}
+                                        </span>
                                     )}
                                 </div>
                             ))}
@@ -200,8 +202,10 @@ export function ItemModal({ item, isOpen, onClose }: ItemModalProps) {
                         <span className="material-symbols-outlined text-lg">shopping_basket</span>
                         <span className="text-sm uppercase tracking-wider">Add</span>
                         <span className="text-sm opacity-50">•</span>
-                        <span className="text-sm">Rs {totalPrice.toFixed(2)}</span>
-                        {settings?.vat_enabled && <span className="text-[10px] opacity-70 font-normal">(+ VAT)</span>}
+                        <span className="text-sm">
+                            {totalPrice === 0 ? 'Free' : `Rs ${totalPrice.toFixed(2)}`}
+                        </span>
+                        {settings?.vat_enabled && totalPrice > 0 && <span className="text-[10px] opacity-70 font-normal">(+ VAT)</span>}
                     </button>
                 </div>
             </div>

@@ -11,11 +11,14 @@ export const orderService = {
     payment_method: string;
     service_option: string;
     delivery_address?: string;
+    delivery_lat?: number;
+    delivery_lng?: number;
+    google_maps_link?: string;
     notes?: string;
   }) {
     // 1. Create Order
     const orderCode = '#' + Math.floor(100 + Math.random() * 900).toString(); // Simple 3 digit code
-    const initialStatus = 'awaiting_confirmation';
+    const initialStatus = 'pending'; // Changed to pending for MVP simplicity
     
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
@@ -29,6 +32,9 @@ export const orderService = {
         payment_method: order.payment_method,
         service_option: order.service_option,
         delivery_address: order.delivery_address,
+        delivery_lat: order.delivery_lat,
+        delivery_lng: order.delivery_lng,
+        google_maps_link: order.google_maps_link,
         notes: order.notes,
         items: order.items // Save full items details as JSONB
       })
@@ -77,10 +83,11 @@ export const orderService = {
       if (status && status !== 'all') {
         query = query.eq('status', status);
       } else {
-        // By default, exclude awaiting_confirmation AND cancelled orders from the main list
+        // By default, exclude awaiting_confirmation AND cancelled AND pending orders from the main list
         // This keeps the "All" view focused on valid orders (active + completed)
         query = query.neq('status', 'awaiting_confirmation');
         query = query.neq('status', 'cancelled');
+        query = query.neq('status', 'pending');
       }
     }
 
@@ -127,6 +134,7 @@ export const orderService = {
 
     const counts = {
       pending: 0,
+      received: 0,
       preparing: 0,
       ready: 0,
       completed: 0,

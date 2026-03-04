@@ -23,7 +23,6 @@ export function useStoreSettings() {
     const subscription = supabase
       .channel('public:store_settings')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'store_settings' }, (payload) => {
-        console.log('Settings update:', payload);
         if (payload.new) {
             const newSettings = payload.new as StoreSettings;
             setSettings(newSettings);

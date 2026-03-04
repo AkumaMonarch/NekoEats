@@ -46,7 +46,8 @@ export const dashboardService = {
           )
         )
       `)
-      .neq('status', 'cancelled'); // Exclude cancelled orders
+      .neq('status', 'cancelled') // Exclude cancelled orders
+      .neq('status', 'pending'); // Exclude pending (unconfirmed) orders
 
     if (error) throw error;
 

@@ -175,6 +175,7 @@ export function MenuFormModal({ isOpen, onClose, onSuccess, itemToEdit }: MenuFo
                     className="w-full rounded-xl border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3 text-sm"
                     placeholder="0.00"
                   />
+                  <p className="text-[10px] text-slate-400 mt-1">Set to 0 if variants determine the full price.</p>
                 </div>
 
                 <div>

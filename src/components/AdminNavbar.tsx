@@ -34,6 +34,19 @@ export function AdminNavbar() {
           )}>Orders</span>
         </Link>
 
+        <Link to="/admin/riders" className="group flex flex-col items-center gap-1">
+          <div className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200",
+            location.pathname === '/admin/riders' ? "bg-primary/10 text-primary" : "group-hover:bg-slate-100 dark:group-hover:bg-white/5 text-slate-400 dark:text-white/40"
+          )}>
+            <span className={cn("material-symbols-outlined text-[24px]", location.pathname === '/admin/riders' && "fill-1")}>two_wheeler</span>
+          </div>
+          <span className={cn(
+            "text-[9px] font-bold uppercase tracking-[0.05em]",
+            location.pathname === '/admin/riders' ? "text-primary" : "text-slate-400 dark:text-white/40"
+          )}>Riders</span>
+        </Link>
+
         <Link to="/admin/menu" className="group flex flex-col items-center gap-1">
           <div className={cn(
             "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200",

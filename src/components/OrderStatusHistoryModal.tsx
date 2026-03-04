@@ -45,7 +45,8 @@ export default function OrderStatusHistoryModal({ order, isOpen, onClose, onReve
 
   const getStatusLabel = (status: string | null) => {
     if (!status) return 'Unknown';
-    if (status === 'pending') return 'Received';
+    if (status === 'pending') return 'Pending';
+    if (status === 'received') return 'Received';
     if (status === 'preparing') return 'In Kitchen';
     if (status === 'ready') return 'Ready';
     if (status === 'completed') return 'Done';

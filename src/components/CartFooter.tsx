@@ -34,7 +34,9 @@ export function CartFooter() {
               </div>
               <div className="flex flex-col items-start">
                 <span className="text-xs font-medium opacity-90 uppercase tracking-wider">Total {settings?.vat_enabled && '(incl. VAT)'}</span>
-                <span className="text-lg leading-none">Rs {finalTotal.toFixed(2)}</span>
+                <span className="text-lg leading-none">
+                  {finalTotal === 0 ? 'Free' : `Rs ${finalTotal.toFixed(2)}`}
+                </span>
               </div>
             </div>
             <div className="flex items-center gap-2">

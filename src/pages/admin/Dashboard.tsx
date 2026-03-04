@@ -49,6 +49,14 @@ export default function AdminDashboard() {
     );
   }
 
+  if (!stats) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-[#0c0605] text-slate-500">
+            Failed to load statistics.
+        </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background-light dark:bg-[#0c0605] text-slate-900 dark:text-white pb-28">
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0c0605]/95 backdrop-blur-xl px-5 py-4 border-b border-gray-200 dark:border-white/5">
@@ -126,9 +134,9 @@ export default function AdminDashboard() {
         </div>
 
         {/* Top Selling Items (Pie Chart) */}
-        <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
+        <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm min-w-0">
             <h3 className="font-bold text-base tracking-tight mb-4">Top Selling Items</h3>
-            <div className="h-64 w-full">
+            <div className="h-64 w-full min-w-0" style={{ minHeight: '250px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
@@ -162,9 +170,9 @@ export default function AdminDashboard() {
         </section>
 
         {/* Busy Hours (Bar Chart) */}
-        <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
+        <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm min-w-0">
             <h3 className="font-bold text-base tracking-tight mb-4">Busy Hours</h3>
-            <div className="h-64 w-full">
+            <div className="h-64 w-full min-w-0" style={{ minHeight: '250px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats?.busyHours}>
                         <XAxis 
@@ -185,10 +193,10 @@ export default function AdminDashboard() {
         </section>
 
         {/* Delivery vs Pickup Split (Donut Chart) */}
-        <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
+        <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm min-w-0">
             <h3 className="font-bold text-base tracking-tight mb-4">Delivery vs Pickup</h3>
             <div className="flex items-center gap-6">
-                <div className="h-40 w-40 shrink-0">
+                <div className="h-40 w-40 shrink-0 min-w-0" style={{ minHeight: '160px', minWidth: '160px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
