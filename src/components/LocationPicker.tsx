@@ -11,6 +11,8 @@ interface LocationPickerProps {
     lng: number;
     distance: number;
     deliveryFee: number;
+    warning?: string;
+    isOutOfRange?: boolean;
   }) => void;
   initialLat?: number;
   initialLng?: number;
@@ -19,29 +21,28 @@ interface LocationPickerProps {
 const DEFAULT_RESTAURANT_COORDS = { lat: -20.1609, lng: 57.4966 };
 const DEFAULT_BASE_FEE = 50;
 const DEFAULT_PER_KM_FEE = 15;
-const MAX_DISTANCE_KM = 15;
+const DEFAULT_MAX_DISTANCE_KM = 15;
 
 export default function LocationPicker({ onLocationSelect, initialLat, initialLng }: LocationPickerProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
-  const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
-  const [distance, setDistance] = useState<number | null>(null);
-  const [fee, setFee] = useState<number | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [isLocked, setIsLocked] = useState(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Settings state
   const [restaurantCoords, setRestaurantCoords] = useState(DEFAULT_RESTAURANT_COORDS);
   const [baseFee, setBaseFee] = useState(DEFAULT_BASE_FEE);
   const [perKmFee, setPerKmFee] = useState(DEFAULT_PER_KM_FEE);
+  const [maxDistanceEnabled, setMaxDistanceEnabled] = useState(false);
+  const [maxDistanceKm, setMaxDistanceKm] = useState(DEFAULT_MAX_DISTANCE_KM);
 
   // Refs for settings to avoid stale closures in map event listeners
   const restaurantCoordsRef = useRef(DEFAULT_RESTAURANT_COORDS);
   const baseFeeRef = useRef(DEFAULT_BASE_FEE);
   const perKmFeeRef = useRef(DEFAULT_PER_KM_FEE);
+  const maxDistanceEnabledRef = useRef(false);
+  const maxDistanceKmRef = useRef(DEFAULT_MAX_DISTANCE_KM);
 
   useEffect(() => {
     restaurantCoordsRef.current = restaurantCoords;
@@ -65,6 +66,20 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
   }, [perKmFee]);
 
   useEffect(() => {
+    maxDistanceEnabledRef.current = maxDistanceEnabled;
+    if (map.current) {
+        handleMapMove();
+    }
+  }, [maxDistanceEnabled]);
+
+  useEffect(() => {
+    maxDistanceKmRef.current = maxDistanceKm;
+    if (map.current) {
+        handleMapMove();
+    }
+  }, [maxDistanceKm]);
+
+  useEffect(() => {
     const loadSettings = async () => {
       try {
         const settings = await settingsService.getSettings();
@@ -74,6 +89,8 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
           }
           if (settings.delivery_base_fee !== undefined) setBaseFee(settings.delivery_base_fee);
           if (settings.delivery_per_km_fee !== undefined) setPerKmFee(settings.delivery_per_km_fee);
+          if (settings.delivery_max_distance_enabled !== undefined) setMaxDistanceEnabled(settings.delivery_max_distance_enabled);
+          if (settings.delivery_max_distance_km !== undefined) setMaxDistanceKm(settings.delivery_max_distance_km);
         }
       } catch (error) {
         console.error('Failed to load settings:', error);
@@ -111,27 +128,6 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
     };
   }, []); // Empty dependency array as we use refs inside handleMapMove
 
-  // Handle locking/unlocking map interactions
-  useEffect(() => {
-    if (!map.current) return;
-    
-    if (isLocked) {
-        map.current.dragPan.disable();
-        map.current.scrollZoom.disable();
-        map.current.touchZoomRotate.disable();
-        map.current.doubleClickZoom.disable();
-        map.current.boxZoom.disable();
-        map.current.keyboard.disable();
-    } else {
-        map.current.dragPan.enable();
-        map.current.scrollZoom.enable();
-        map.current.touchZoomRotate.enable();
-        map.current.doubleClickZoom.enable();
-        map.current.boxZoom.enable();
-        map.current.keyboard.enable();
-    }
-  }, [isLocked]);
-
   const handleMapMove = () => {
     if (!map.current) return;
     const center = map.current.getCenter();
@@ -147,11 +143,14 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
         let formattedAddress = 'Unknown Location';
         let roadDist = 0;
         let calculatedFee = 0;
+        let warningMsg: string | undefined = undefined;
 
         // Use refs to get current settings values
         const currentRestaurantCoords = restaurantCoordsRef.current;
         const currentBaseFee = baseFeeRef.current;
         const currentPerKmFee = perKmFeeRef.current;
+        const isMaxDistanceEnabled = maxDistanceEnabledRef.current;
+        const maxDistance = maxDistanceKmRef.current;
 
         // Parallel fetch: Reverse Geocode AND OSRM Route
         const geocodePromise = (async () => {
@@ -192,14 +191,14 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
 
         calculatedFee = currentBaseFee + (roadDist * currentPerKmFee);
 
-        setDistance(roadDist);
-        setFee(calculatedFee);
-        setAddress(formattedAddress);
+        let isOutOfRange = false;
 
-        if (roadDist > MAX_DISTANCE_KM) {
-            setWarning('⚠️ This location may be outside our delivery zone');
-        } else {
-            setWarning(null);
+        if (isMaxDistanceEnabled && roadDist > maxDistance) {
+            warningMsg = `⚠️ This location is outside our ${maxDistance}km delivery zone`;
+            isOutOfRange = true;
+        } else if (!isMaxDistanceEnabled && roadDist > DEFAULT_MAX_DISTANCE_KM) {
+             // Fallback warning if not strictly enforced but still far
+             warningMsg = '⚠️ This location may be outside our delivery zone';
         }
         
         onLocationSelect({
@@ -207,17 +206,19 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
             lat,
             lng,
             distance: roadDist,
-            deliveryFee: calculatedFee
+            deliveryFee: calculatedFee,
+            warning: warningMsg,
+            isOutOfRange
         });
       } catch (error) {
         console.error('Location resolution failed:', error);
-        setAddress('Location selected (Address lookup failed)');
          onLocationSelect({
             address: 'Location selected (Address lookup failed)',
             lat,
             lng,
             distance: 0,
-            deliveryFee: baseFeeRef.current
+            deliveryFee: baseFeeRef.current,
+            warning: 'Address lookup failed'
         });
       } finally {
         setLoading(false);
@@ -297,30 +298,18 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
             <div ref={mapContainer} className="w-full h-full" />
             
             {/* Center Pin */}
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 -mt-4 transition-opacity ${isLocked ? 'opacity-50' : 'opacity-100'}`}>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 -mt-4 transition-opacity opacity-100">
                 <span className="material-symbols-outlined text-4xl text-primary drop-shadow-lg">location_on</span>
             </div>
 
-            {/* Locked Overlay */}
-            {isLocked && (
-                <div className="absolute inset-0 bg-black/5 backdrop-blur-[1px] z-20 flex items-center justify-center pointer-events-none">
-                    <div className="bg-white/90 dark:bg-black/80 px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 border border-white/20">
-                        <span className="material-symbols-outlined text-green-600 text-sm">lock</span>
-                        <span className="font-bold text-xs text-slate-900 dark:text-white">Location Locked</span>
-                    </div>
-                </div>
-            )}
-
             {/* GPS Button */}
-            {!isLocked && (
-                <button 
-                    onClick={handleGPS}
-                    className="absolute bottom-4 right-4 h-10 w-10 bg-white dark:bg-[#1e1411] rounded-full shadow-lg flex items-center justify-center text-slate-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-colors z-10"
-                    title="Use My Location"
-                >
-                    <span className="material-symbols-outlined">my_location</span>
-                </button>
-            )}
+            <button 
+                onClick={handleGPS}
+                className="absolute bottom-4 right-4 h-10 w-10 bg-white dark:bg-[#1e1411] rounded-full shadow-lg flex items-center justify-center text-slate-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-colors z-10"
+                title="Use My Location"
+            >
+                <span className="material-symbols-outlined">my_location</span>
+            </button>
 
             {/* Loading Overlay */}
             {loading && (
@@ -329,58 +318,6 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
                     <span className="text-slate-900 dark:text-white">Resolving location...</span>
                 </div>
             )}
-        </div>
-
-        {/* Info Panel */}
-        <div className="bg-gray-50 dark:bg-white/5 p-3 rounded-xl space-y-2">
-            <div className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-primary text-lg mt-0.5 shrink-0">location_on</span>
-                <div>
-                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Selected Location</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">{address || 'Drag map to select location'}</p>
-                </div>
-            </div>
-            
-            {distance !== null && (
-                <div className="flex items-center gap-4 pt-2 border-t border-dashed border-gray-200 dark:border-white/10">
-                    <div>
-                        <p className="text-[10px] text-slate-500 uppercase font-bold">Distance</p>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white">{distance.toFixed(1)} km <span className="text-[10px] font-normal text-slate-500">(by road)</span></p>
-                    </div>
-                    <div>
-                        <p className="text-[10px] text-slate-500 uppercase font-bold">Est. Fee</p>
-                        <p className="text-xs font-bold text-primary">Rs {fee?.toFixed(0)}</p>
-                    </div>
-                </div>
-            )}
-
-            {warning && (
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 text-xs font-bold bg-amber-50 dark:bg-amber-500/10 p-2 rounded-lg">
-                    <span className="material-symbols-outlined text-sm">warning</span>
-                    {warning}
-                </div>
-            )}
-
-            {/* Lock/Unlock Controls */}
-            <div className="pt-2 mt-2 border-t border-dashed border-gray-200 dark:border-white/10">
-                {!isLocked ? (
-                    <button 
-                        onClick={() => setIsLocked(true)}
-                        className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 rounded-lg font-bold shadow-sm hover:bg-slate-800 dark:hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 text-sm"
-                    >
-                        <span className="material-symbols-outlined text-lg">lock</span>
-                        Confirm Location
-                    </button>
-                ) : (
-                    <button 
-                        onClick={() => setIsLocked(false)}
-                        className="w-full bg-white dark:bg-white/10 text-slate-900 dark:text-white border border-gray-200 dark:border-white/10 py-2.5 rounded-lg font-bold shadow-sm hover:bg-gray-50 dark:hover:bg-white/20 transition-colors flex items-center justify-center gap-2 text-sm"
-                    >
-                        <span className="material-symbols-outlined text-lg">edit_location</span>
-                        Change Location
-                    </button>
-                )}
-            </div>
         </div>
     </div>
   );

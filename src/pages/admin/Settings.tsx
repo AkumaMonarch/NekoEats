@@ -444,6 +444,7 @@ export default function AdminSettings() {
                     </div>
 
                     {settings?.is_delivery_enabled && (
+                        <>
                         <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 space-y-3">
                             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Delivery Fee Calculation</h3>
                             <div className="grid grid-cols-2 gap-3">
@@ -478,6 +479,40 @@ export default function AdminSettings() {
                             </div>
                             <p className="text-[10px] text-slate-400">Total Fee = Base Fee + (Per KM × Distance)</p>
                         </div>
+
+                        <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Max Delivery Distance</h3>
+                                    <p className="text-[10px] text-slate-400">Restrict orders to a specific radius</p>
+                                </div>
+                                <div 
+                                    onClick={() => setSettings(prev => prev ? ({ ...prev, delivery_max_distance_enabled: !prev.delivery_max_distance_enabled }) : null)}
+                                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none ${settings?.delivery_max_distance_enabled ? 'bg-primary' : 'bg-gray-200 dark:bg-slate-700'}`}
+                                >
+                                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings?.delivery_max_distance_enabled ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
+                                </div>
+                            </div>
+                            
+                            {settings?.delivery_max_distance_enabled && (
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Max Distance (KM)</label>
+                                    <input 
+                                        type="number" 
+                                        value={settings?.delivery_max_distance_km || 0} 
+                                        onChange={(e) => {
+                                            const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                            setSettings(prev => prev ? ({ ...prev, delivery_max_distance_km: val }) : null);
+                                        }}
+                                        className="w-full bg-white dark:bg-black/20 border-none rounded-lg p-2 text-sm font-medium" 
+                                        placeholder="e.g. 15"
+                                        min="0"
+                                    />
+                                    <p className="text-[10px] text-slate-400 mt-1">Orders outside this radius will be blocked.</p>
+                                </div>
+                            )}
+                        </div>
+                        </>
                     )}
 
                     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">

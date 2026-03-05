@@ -23,6 +23,8 @@ export default function Cart() {
   const [deliveryLat, setDeliveryLat] = useState<number | null>(null);
   const [deliveryLng, setDeliveryLng] = useState<number | null>(null);
   const [deliveryDistance, setDeliveryDistance] = useState<number | null>(null);
+  const [deliveryWarning, setDeliveryWarning] = useState<string | null>(null);
+  const [isOutOfRange, setIsOutOfRange] = useState(false);
 
   useEffect(() => {
     const checkScroll = () => {
@@ -58,12 +60,14 @@ export default function Cart() {
     setStep('service');
   };
 
-  const handleLocationSelect = (location: { address: string; lat: number; lng: number; distance: number; deliveryFee: number }) => {
+  const handleLocationSelect = (location: { address: string; lat: number; lng: number; distance: number; deliveryFee: number; warning?: string; isOutOfRange?: boolean }) => {
       setContact(prev => ({ ...prev, address: location.address }));
       setDeliveryLat(location.lat);
       setDeliveryLng(location.lng);
       setDeliveryDistance(location.distance);
       setDeliveryFee(location.deliveryFee);
+      setDeliveryWarning(location.warning || null);
+      setIsOutOfRange(location.isOutOfRange || false);
   };
 
   const handlePlaceOrder = async () => {
@@ -378,6 +382,12 @@ export default function Cart() {
                                             <p className="text-xs text-slate-500 mt-1">Distance: {deliveryDistance?.toFixed(2)} km • Fee: Rs {deliveryFee.toFixed(2)}</p>
                                         </div>
                                     </div>
+                                    {deliveryWarning && (
+                                        <div className={`flex items-center gap-2 text-xs font-bold p-2 rounded-lg ml-1 ${isOutOfRange ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-500/10' : 'text-amber-600 bg-amber-50 dark:text-amber-500 dark:bg-amber-500/10'}`}>
+                                            <span className="material-symbols-outlined text-sm">{isOutOfRange ? 'error' : 'warning'}</span>
+                                            {deliveryWarning}
+                                        </div>
+                                    )}
                                     <p className="text-[10px] text-slate-400 ml-1">
                                         * Address is automatically generated from your map pin.
                                     </p>
@@ -399,10 +409,10 @@ export default function Cart() {
                     </div>
                     <button 
                         onClick={() => setStep('contact')}
-                        disabled={(serviceOption === 'delivery' && !contact.address) || !hasScrolledBottom}
+                        disabled={(serviceOption === 'delivery' && (!contact.address || isOutOfRange)) || !hasScrolledBottom}
                         className={cn(
                             "w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all",
-                            ((serviceOption === 'delivery' && !contact.address) || !hasScrolledBottom) && "opacity-50 cursor-not-allowed grayscale"
+                            ((serviceOption === 'delivery' && (!contact.address || isOutOfRange)) || !hasScrolledBottom) && "opacity-50 cursor-not-allowed grayscale"
                         )}
                     >
                         <span>{hasScrolledBottom ? "Next Step" : "Scroll to Continue"}</span>

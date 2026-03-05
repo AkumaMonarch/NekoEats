@@ -50,6 +50,8 @@ export interface StoreSettings {
   longitude?: number;
   delivery_base_fee?: number;
   delivery_per_km_fee?: number;
+  delivery_max_distance_enabled?: boolean;
+  delivery_max_distance_km?: number;
 }
 
 export interface MenuItem {
