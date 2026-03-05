@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { menuService } from '../services/menuService';
 import { categoryService } from '../services/categoryService';
 import { MenuItem, CategoryItem } from '../lib/types';
@@ -11,6 +11,7 @@ import { useStoreSettings } from '../hooks/useStoreSettings';
 
 export default function Menu() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -100,7 +101,7 @@ export default function Menu() {
             </div>
         ) : (
             <>
-                <button onClick={() => window.history.back()} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center active:scale-95 transition-transform">
+                <button onClick={() => navigate('/')} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center active:scale-95 transition-transform">
                     <span className="material-symbols-outlined text-slate-900 dark:text-white">arrow_back_ios_new</span>
                 </button>
                 <h1 className="font-bold text-lg text-slate-900 dark:text-white uppercase tracking-wider">{settings?.restaurant_name || 'The Burger House'}</h1>
