@@ -38,6 +38,32 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
   const [baseFee, setBaseFee] = useState(DEFAULT_BASE_FEE);
   const [perKmFee, setPerKmFee] = useState(DEFAULT_PER_KM_FEE);
 
+  // Refs for settings to avoid stale closures in map event listeners
+  const restaurantCoordsRef = useRef(DEFAULT_RESTAURANT_COORDS);
+  const baseFeeRef = useRef(DEFAULT_BASE_FEE);
+  const perKmFeeRef = useRef(DEFAULT_PER_KM_FEE);
+
+  useEffect(() => {
+    restaurantCoordsRef.current = restaurantCoords;
+    if (map.current) {
+        handleMapMove();
+    }
+  }, [restaurantCoords]);
+
+  useEffect(() => {
+    baseFeeRef.current = baseFee;
+    if (map.current) {
+        handleMapMove();
+    }
+  }, [baseFee]);
+
+  useEffect(() => {
+    perKmFeeRef.current = perKmFee;
+    if (map.current) {
+        handleMapMove();
+    }
+  }, [perKmFee]);
+
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -83,7 +109,7 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
         // Cleanup if needed
         // map.current?.remove(); // React strict mode might cause issues if we remove too early, but usually good practice.
     };
-  }, [restaurantCoords, baseFee, perKmFee]); // Re-run if settings change? No, map init should be independent. But handleMapMove depends on them.
+  }, []); // Empty dependency array as we use refs inside handleMapMove
 
   // Handle locking/unlocking map interactions
   useEffect(() => {
@@ -122,6 +148,11 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
         let roadDist = 0;
         let calculatedFee = 0;
 
+        // Use refs to get current settings values
+        const currentRestaurantCoords = restaurantCoordsRef.current;
+        const currentBaseFee = baseFeeRef.current;
+        const currentPerKmFee = perKmFeeRef.current;
+
         // Parallel fetch: Reverse Geocode AND OSRM Route
         const geocodePromise = (async () => {
             try {
@@ -146,7 +177,7 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
             }
         })();
 
-        const routePromise = mapService.getRoute(restaurantCoords.lat, restaurantCoords.lng, lat, lng);
+        const routePromise = mapService.getRoute(currentRestaurantCoords.lat, currentRestaurantCoords.lng, lat, lng);
 
         const [addressResult, routeResult] = await Promise.all([geocodePromise, routePromise]);
         
@@ -156,10 +187,10 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
             roadDist = routeResult.distance_km;
         } else {
             // Fallback to straight line if OSRM fails
-             roadDist = mapService.calculateDistance(restaurantCoords.lat, restaurantCoords.lng, lat, lng);
+             roadDist = mapService.calculateDistance(currentRestaurantCoords.lat, currentRestaurantCoords.lng, lat, lng);
         }
 
-        calculatedFee = baseFee + (roadDist * perKmFee);
+        calculatedFee = currentBaseFee + (roadDist * currentPerKmFee);
 
         setDistance(roadDist);
         setFee(calculatedFee);
@@ -186,7 +217,7 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
             lat,
             lng,
             distance: 0,
-            deliveryFee: baseFee
+            deliveryFee: baseFeeRef.current
         });
       } finally {
         setLoading(false);

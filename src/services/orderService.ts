@@ -71,7 +71,8 @@ export const orderService = {
       .from('orders')
       .select(`
         *,
-        order_items (*)
+        order_items (*),
+        deliveries (*)
       `)
       .order('created_at', { ascending: false });
 
@@ -95,7 +96,12 @@ export const orderService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data;
+    
+    // Transform data to attach the latest delivery if multiple exist (though usually 1)
+    return data.map((order: any) => ({
+      ...order,
+      delivery: order.deliveries && order.deliveries.length > 0 ? order.deliveries[0] : null
+    }));
   },
 
   async updateOrderStatus(id: string, status: string) {

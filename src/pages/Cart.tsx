@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../store/cartStore';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn, extractCoordinates } from '../lib/utils';
 import { orderService } from '../services/orderService';
 import { useStoreSettings } from '../hooks/useStoreSettings';
@@ -16,6 +16,7 @@ export default function Cart() {
   const { settings } = useStoreSettings();
   const [hasScrolledBottom, setHasScrolledBottom] = useState(false);
   const [orderCode, setOrderCode] = useState<string | null>(null);
+  const navigate = useNavigate();
   
   // New state for delivery
   const [deliveryFee, setDeliveryFee] = useState(50); // Base fee default
@@ -361,21 +362,27 @@ export default function Cart() {
                         <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
                             <div className="space-y-2">
                                 <label className="text-base font-bold text-slate-900 dark:text-white ml-1">Delivery Location</label>
+                                <p className="text-xs text-slate-500 dark:text-gray-400 ml-1 mb-2">
+                                    Please use the map to pin your exact delivery location. This ensures accurate delivery fee calculation.
+                                </p>
                                 <LocationPicker onLocationSelect={handleLocationSelect} />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-base font-bold text-slate-900 dark:text-white ml-1">Address Details</label>
-                                <div className="relative">
-                                    <span className="material-symbols-outlined absolute left-4 top-4 text-gray-400">location_on</span>
-                                    <textarea 
-                                        value={contact.address}
-                                        onChange={(e) => setContact({...contact, address: e.target.value})}
-                                        className="w-full h-24 pl-12 pt-3 rounded-xl border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white focus:ring-primary focus:border-primary resize-none"
-                                        placeholder="Confirm or edit your address (e.g. Add Apt/Floor)"
-                                    />
+                            {contact.address && (
+                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                    <label className="text-base font-bold text-slate-900 dark:text-white ml-1">Selected Address</label>
+                                    <div className="relative">
+                                        <span className="material-symbols-outlined absolute left-4 top-4 text-primary">location_on</span>
+                                        <div className="w-full p-4 pl-12 rounded-xl border border-primary/20 bg-primary/5 text-slate-900 dark:text-white min-h-[60px]">
+                                            <p className="font-medium text-sm">{contact.address}</p>
+                                            <p className="text-xs text-slate-500 mt-1">Distance: {deliveryDistance?.toFixed(2)} km • Fee: Rs {deliveryFee.toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 ml-1">
+                                        * Address is automatically generated from your map pin.
+                                    </p>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -546,7 +553,7 @@ export default function Cart() {
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark pb-32">
       <header className="sticky top-0 z-20 bg-white/90 dark:bg-background-dark/90 backdrop-blur-md px-4 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/5">
-        <button onClick={() => window.history.back()} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center">
+        <button onClick={() => navigate(-1)} className="h-10 w-10 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center">
             <span className="material-symbols-outlined text-slate-900 dark:text-white">arrow_back_ios_new</span>
         </button>
         <h1 className="font-bold text-xl text-slate-900 dark:text-white">Checkout</h1>

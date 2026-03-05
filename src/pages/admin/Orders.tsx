@@ -13,6 +13,7 @@ import { Order as BaseOrder, Rider } from '../../lib/types';
 
 interface Order extends Omit<BaseOrder, 'items'> {
   order_items: any[];
+  delivery?: any;
 }
 
 export default function AdminOrders() {
@@ -58,11 +59,28 @@ export default function AdminOrders() {
 
   const fetchOrders = async () => {
     try {
+      let statusFilter = activeTab === 'all' ? undefined : activeTab;
+      
+      // Special handling for 'delivery' tab - we fetch all active orders and filter client-side or use a custom query
+      // For simplicity, if tab is 'delivery', we fetch 'all' (or active) and filter in the UI, 
+      // BUT getOrders logic currently filters by status if provided.
+      // So if tab is 'delivery', we pass undefined to get all active orders, then filter.
+      if (activeTab === 'delivery') {
+          statusFilter = undefined;
+      }
+
       const [ordersData, countsData] = await Promise.all([
-        orderService.getOrders(activeTab === 'all' ? undefined : activeTab, searchQuery),
+        orderService.getOrders(statusFilter, searchQuery),
         orderService.getOrderCounts()
       ]);
-      setOrders(ordersData as any[]);
+      
+      let finalOrders = ordersData as any[];
+      
+      if (activeTab === 'delivery') {
+          finalOrders = finalOrders.filter((o: any) => o.service_option === 'delivery' && o.status !== 'completed' && o.status !== 'cancelled');
+      }
+
+      setOrders(finalOrders);
       setOrderCounts(countsData as any);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
@@ -203,9 +221,12 @@ export default function AdminOrders() {
             ref={scrollRef}
             className="flex gap-2 overflow-x-auto hide-scrollbar cursor-grab select-none"
         >
-            {['All', 'Received', 'Preparing', 'Ready', 'Completed', 'Cancelled'].map((tab) => {
+            {['All', 'Received', 'Preparing', 'Ready', 'Delivery', 'Completed', 'Cancelled'].map((tab) => {
                 const statusKey = tab.toLowerCase();
-                const count = statusKey === 'all' ? 0 : orderCounts[statusKey as keyof typeof orderCounts] || 0;
+                // For 'delivery' tab, we might need a custom count or just rely on filtering
+                const count = statusKey === 'all' ? 0 : 
+                              statusKey === 'delivery' ? orders.filter(o => o.service_option === 'delivery' && o.status !== 'completed' && o.status !== 'cancelled').length :
+                              orderCounts[statusKey as keyof typeof orderCounts] || 0;
                 
                 return (
                     <button
@@ -263,12 +284,19 @@ export default function AdminOrders() {
                     >
                         <div className="flex justify-between items-start">
                             <div className="flex gap-3">
-                                <span className={cn(
-                                    "px-2 py-1 rounded-lg text-xs font-bold h-fit",
-                                    expandedOrder === order.id ? "bg-primary text-white" : "bg-gray-100 dark:bg-white/10 text-slate-500 dark:text-slate-400"
-                                )}>
-                                    {order.order_code}
-                                </span>
+                                <div className="flex flex-col items-center gap-1">
+                                    <span className={cn(
+                                        "px-2 py-1 rounded-lg text-xs font-bold h-fit",
+                                        expandedOrder === order.id ? "bg-primary text-white" : "bg-gray-100 dark:bg-white/10 text-slate-500 dark:text-slate-400"
+                                    )}>
+                                        {order.order_code}
+                                    </span>
+                                    {order.service_option === 'delivery' ? (
+                                        <span className="material-symbols-outlined text-orange-500 text-lg" title="Delivery">two_wheeler</span>
+                                    ) : (
+                                        <span className="material-symbols-outlined text-blue-500 text-lg" title="Pickup">shopping_bag</span>
+                                    )}
+                                </div>
                                 <div>
                                     <h3 className="font-bold text-base">{order.customer_name}</h3>
                                     <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -318,7 +346,14 @@ export default function AdminOrders() {
                                 <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 dark:bg-white/10 -z-10 -translate-y-1/2"></div>
                                 {['received', 'preparing', 'ready', 'completed'].map((step, idx) => {
                                     const steps = ['received', 'preparing', 'ready', 'completed'];
-                                    const currentIdx = steps.indexOf(order.status);
+                                    let currentIdx = steps.indexOf(order.status);
+                                    
+                                    // Adjust current index for delivery orders that are picked up
+                                    if (order.service_option === 'delivery' && order.delivery?.status === 'picked_up' && order.status === 'ready') {
+                                        // We stay at 'ready' step but label changes to 'Out for Delivery'
+                                        // If we want to show it as "further along", we'd need more steps.
+                                        // For now, keeping it at 'ready' index is fine as long as label is clear.
+                                    }
                                     // If order status is not in the list (e.g. cancelled), handle gracefully
                                     if (currentIdx === -1 && order.status !== 'cancelled') return null;
                                     
@@ -329,7 +364,15 @@ export default function AdminOrders() {
                                     let label = step;
                                     if (step === 'received') label = 'Received';
                                     if (step === 'preparing') label = 'Preparing';
-                                    if (step === 'ready') label = 'Ready';
+                                    if (step === 'ready') {
+                                        if (order.service_option === 'delivery') {
+                                            if (order.delivery?.status === 'picked_up') label = 'Out for Delivery';
+                                            else if (order.delivery?.status === 'delivered') label = 'Delivered';
+                                            else label = 'Ready for Rider';
+                                        } else {
+                                            label = 'Ready for Pickup';
+                                        }
+                                    }
                                     if (step === 'completed') label = 'Done';
                                     
                                     return (
@@ -345,7 +388,9 @@ export default function AdminOrders() {
                                                 <span className="material-symbols-outlined text-sm">
                                                     {step === 'received' && 'receipt_long'}
                                                     {step === 'preparing' && 'skillet'}
-                                                    {step === 'ready' && 'check'}
+                                                    {step === 'ready' && (
+                                                        order.service_option === 'delivery' ? 'two_wheeler' : 'shopping_bag'
+                                                    )}
                                                     {step === 'completed' && 'done_all'}
                                                 </span>
                                             </div>
@@ -483,13 +528,27 @@ export default function AdminOrders() {
                                     )}
                                     
                                     {order.service_option === 'delivery' && order.status !== 'completed' && order.status !== 'cancelled' && (
-                                        <button 
-                                            onClick={() => openAssignRiderModal(order)}
-                                            className="w-full py-3 rounded-xl bg-orange-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
-                                        >
-                                            <span className="material-symbols-outlined text-lg">two_wheeler</span>
-                                            ASSIGN RIDER
-                                        </button>
+                                        <div className="flex gap-2">
+                                            {!order.delivery ? (
+                                                <button 
+                                                    onClick={() => openAssignRiderModal(order)}
+                                                    className="flex-1 py-3 rounded-xl bg-orange-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+                                                >
+                                                    <span className="material-symbols-outlined text-lg">two_wheeler</span>
+                                                    ASSIGN RIDER
+                                                </button>
+                                            ) : (
+                                                <a 
+                                                    href={`/track/${order.delivery.id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+                                                >
+                                                    <span className="material-symbols-outlined text-lg">location_on</span>
+                                                    TRACK RIDER
+                                                </a>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             )}
