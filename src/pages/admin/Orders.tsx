@@ -282,59 +282,54 @@ export default function AdminOrders() {
                         className="p-4 cursor-pointer"
                         onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                     >
-                        <div className="flex justify-between items-start">
-                            <div className="flex gap-3">
-                                <div className="flex flex-col items-center gap-1">
-                                    <span className={cn(
-                                        "px-2 py-1 rounded-lg text-xs font-bold h-fit",
-                                        expandedOrder === order.id ? "bg-primary text-white" : "bg-gray-100 dark:bg-white/10 text-slate-500 dark:text-slate-400"
-                                    )}>
+                        <div className="flex gap-4">
+                            {/* Left: Large Icon */}
+                            <div className={cn(
+                                "h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+                                order.service_option === 'delivery' ? "bg-[#1E1510] text-orange-500 border border-orange-500/20" : "bg-[#0F131A] text-blue-500 border border-blue-500/20"
+                            )}>
+                                <span className="material-symbols-outlined text-3xl">
+                                    {order.service_option === 'delivery' ? 'two_wheeler' : 'shopping_bag'}
+                                </span>
+                            </div>
+
+                            {/* Right: Content */}
+                            <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                                {/* Top Line: Code & Time */}
+                                <div className="flex justify-between items-start">
+                                    <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/10 text-xs font-bold text-slate-500 dark:text-slate-400">
                                         {order.order_code}
                                     </span>
-                                    {order.service_option === 'delivery' ? (
-                                        <span className="material-symbols-outlined text-orange-500 text-lg" title="Delivery">two_wheeler</span>
-                                    ) : (
-                                        <span className="material-symbols-outlined text-blue-500 text-lg" title="Pickup">shopping_bag</span>
-                                    )}
+                                    <span className="text-sm font-handwriting text-slate-400 dark:text-slate-300">
+                                        {(() => {
+                                            const diffInMinutes = Math.floor((new Date().getTime() - new Date(order.created_at).getTime()) / 60000);
+                                            if (diffInMinutes < 60) return `${diffInMinutes} mins`;
+                                            const hours = Math.floor(diffInMinutes / 60);
+                                            const mins = diffInMinutes % 60;
+                                            return `${hours}h ${mins}m`;
+                                        })()}
+                                    </span>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-base">{order.customer_name}</h3>
-                                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                        <span className="material-symbols-outlined text-sm">call</span>
-                                        <span>{order.customer_phone}</span>
+
+                                {/* Middle Line: Name */}
+                                <h3 className="font-bold text-lg truncate text-slate-900 dark:text-white leading-tight">
+                                    {order.customer_name}
+                                </h3>
+
+                                {/* Bottom Line: Details & Expand */}
+                                <div className="flex justify-between items-end">
+                                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                        <div className="flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-[16px]">call</span>
+                                            <span>{order.customer_phone}</span>
+                                        </div>
                                         <span>•</span>
                                         <span>{order.order_items.length} Items</span>
                                     </div>
-                                    {order.service_option === 'delivery' && (
-                                        <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                            <div className="flex items-start gap-1">
-                                                <span className="material-symbols-outlined text-sm shrink-0">location_on</span>
-                                                <span className="line-clamp-2">{order.delivery_address || 'No address provided'}</span>
-                                            </div>
-                                            {order.google_maps_link && (
-                                                <a 
-                                                    href={order.google_maps_link} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-1 text-primary hover:underline mt-1 ml-5 font-medium"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <span className="material-symbols-outlined text-sm">map</span>
-                                                    View on Maps
-                                                </a>
-                                            )}
-                                        </div>
+                                    {expandedOrder !== order.id && (
+                                        <span className="material-symbols-outlined text-slate-400 text-xl">expand_more</span>
                                     )}
                                 </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                                <span className={cn(
-                                    "text-[10px] font-bold uppercase tracking-wider",
-                                    order.status === 'received' ? "text-primary" : "text-slate-400"
-                                )}>{formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}</span>
-                                {expandedOrder !== order.id && (
-                                    <span className="material-symbols-outlined text-slate-400">expand_more</span>
-                                )}
                             </div>
                         </div>
                     </div>
