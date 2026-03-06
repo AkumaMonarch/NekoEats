@@ -1,5 +1,5 @@
 {
-  "name": "Store Locator App",
+  "name": "NekoEats",
   "description": "A store locator application with map integration",
   "requestFramePermissions": [
     "geolocation"

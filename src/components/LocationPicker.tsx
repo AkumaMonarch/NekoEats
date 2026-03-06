@@ -43,92 +43,9 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
   const perKmFeeRef = useRef(DEFAULT_PER_KM_FEE);
   const maxDistanceEnabledRef = useRef(false);
   const maxDistanceKmRef = useRef(DEFAULT_MAX_DISTANCE_KM);
+  const onLocationSelectRef = useRef(onLocationSelect);
 
-  useEffect(() => {
-    restaurantCoordsRef.current = restaurantCoords;
-    if (map.current) {
-        handleMapMove();
-    }
-  }, [restaurantCoords]);
-
-  useEffect(() => {
-    baseFeeRef.current = baseFee;
-    if (map.current) {
-        handleMapMove();
-    }
-  }, [baseFee]);
-
-  useEffect(() => {
-    perKmFeeRef.current = perKmFee;
-    if (map.current) {
-        handleMapMove();
-    }
-  }, [perKmFee]);
-
-  useEffect(() => {
-    maxDistanceEnabledRef.current = maxDistanceEnabled;
-    if (map.current) {
-        handleMapMove();
-    }
-  }, [maxDistanceEnabled]);
-
-  useEffect(() => {
-    maxDistanceKmRef.current = maxDistanceKm;
-    if (map.current) {
-        handleMapMove();
-    }
-  }, [maxDistanceKm]);
-
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const settings = await settingsService.getSettings();
-        if (settings) {
-          if (settings.latitude && settings.longitude) {
-            setRestaurantCoords({ lat: settings.latitude, lng: settings.longitude });
-          }
-          if (settings.delivery_base_fee !== undefined) setBaseFee(settings.delivery_base_fee);
-          if (settings.delivery_per_km_fee !== undefined) setPerKmFee(settings.delivery_per_km_fee);
-          if (settings.delivery_max_distance_enabled !== undefined) setMaxDistanceEnabled(settings.delivery_max_distance_enabled);
-          if (settings.delivery_max_distance_km !== undefined) setMaxDistanceKm(settings.delivery_max_distance_km);
-        }
-      } catch (error) {
-        console.error('Failed to load settings:', error);
-      }
-    };
-    loadSettings();
-  }, []);
-
-  useEffect(() => {
-    if (map.current) return; // Initialize only once
-
-    if (mapContainer.current) {
-      map.current = new maplibregl.Map({
-        container: mapContainer.current,
-        style: 'https://tiles.openfreemap.org/styles/bright',
-        center: [initialLng || 57.5522, initialLat || -20.2833],
-        zoom: 11,
-        cooperativeGestures: true, // Requires 2 fingers to move map on mobile
-      });
-
-      map.current.on('moveend', () => {
-        handleMapMove();
-      });
-
-      // Initial resolve if coordinates provided
-      if (initialLat && initialLng) {
-          // Small delay to ensure map is ready or just call it
-          setTimeout(handleMapMove, 500);
-      }
-    }
-
-    return () => {
-        // Cleanup if needed
-        // map.current?.remove(); // React strict mode might cause issues if we remove too early, but usually good practice.
-    };
-  }, []); // Empty dependency array as we use refs inside handleMapMove
-
-  const handleMapMove = () => {
+  const handleMapMove = React.useCallback(() => {
     if (!map.current) return;
     const center = map.current.getCenter();
     const lat = center.lat;
@@ -201,30 +118,124 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
              warningMsg = '⚠️ This location may be outside our delivery zone';
         }
         
-        onLocationSelect({
-            address: formattedAddress,
-            lat,
-            lng,
-            distance: roadDist,
-            deliveryFee: calculatedFee,
-            warning: warningMsg,
-            isOutOfRange
-        });
+        if (onLocationSelectRef.current) {
+            onLocationSelectRef.current({
+                address: formattedAddress,
+                lat,
+                lng,
+                distance: roadDist,
+                deliveryFee: calculatedFee,
+                warning: warningMsg,
+                isOutOfRange
+            });
+        }
       } catch (error) {
         console.error('Location resolution failed:', error);
-         onLocationSelect({
-            address: 'Location selected (Address lookup failed)',
-            lat,
-            lng,
-            distance: 0,
-            deliveryFee: baseFeeRef.current,
-            warning: 'Address lookup failed'
-        });
+         if (onLocationSelectRef.current) {
+            onLocationSelectRef.current({
+                address: 'Location selected (Address lookup failed)',
+                lat,
+                lng,
+                distance: 0,
+                deliveryFee: baseFeeRef.current,
+                warning: 'Address lookup failed'
+            });
+         }
       } finally {
         setLoading(false);
       }
     }, 1000);
-  };
+  }, []);
+
+  useEffect(() => {
+    onLocationSelectRef.current = onLocationSelect;
+  }, [onLocationSelect]);
+
+  useEffect(() => {
+    restaurantCoordsRef.current = restaurantCoords;
+    if (map.current) {
+        handleMapMove();
+    }
+  }, [restaurantCoords, handleMapMove]);
+
+  useEffect(() => {
+    baseFeeRef.current = baseFee;
+    if (map.current) {
+        handleMapMove();
+    }
+  }, [baseFee, handleMapMove]);
+
+  useEffect(() => {
+    perKmFeeRef.current = perKmFee;
+    if (map.current) {
+        handleMapMove();
+    }
+  }, [perKmFee, handleMapMove]);
+
+  useEffect(() => {
+    maxDistanceEnabledRef.current = maxDistanceEnabled;
+    if (map.current) {
+        handleMapMove();
+    }
+  }, [maxDistanceEnabled, handleMapMove]);
+
+  useEffect(() => {
+    maxDistanceKmRef.current = maxDistanceKm;
+    if (map.current) {
+        handleMapMove();
+    }
+  }, [maxDistanceKm, handleMapMove]);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await settingsService.getSettings();
+        if (settings) {
+          if (settings.latitude && settings.longitude) {
+            setRestaurantCoords({ lat: settings.latitude, lng: settings.longitude });
+          }
+          if (settings.delivery_base_fee !== undefined) setBaseFee(settings.delivery_base_fee);
+          if (settings.delivery_per_km_fee !== undefined) setPerKmFee(settings.delivery_per_km_fee);
+          if (settings.delivery_max_distance_enabled !== undefined) setMaxDistanceEnabled(settings.delivery_max_distance_enabled);
+          if (settings.delivery_max_distance_km !== undefined) setMaxDistanceKm(settings.delivery_max_distance_km);
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  useEffect(() => {
+    if (map.current) return; // Initialize only once
+
+    if (mapContainer.current) {
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: 'https://tiles.openfreemap.org/styles/bright',
+        center: [initialLng || 57.5522, initialLat || -20.2833],
+        zoom: 11,
+        cooperativeGestures: true, // Requires 2 fingers to move map on mobile
+      });
+
+      map.current.on('moveend', () => {
+        handleMapMove();
+      });
+
+      // Initial resolve if coordinates provided
+      if (initialLat && initialLng) {
+          // Small delay to ensure map is ready or just call it
+          setTimeout(handleMapMove, 500);
+      }
+    }
+
+    return () => {
+        // Cleanup if needed
+        // map.current?.remove(); // React strict mode might cause issues if we remove too early, but usually good practice.
+    };
+  }, []); // Empty dependency array as we use refs inside handleMapMove
+
+
 
   const handleGPS = () => {
     setErrorMsg(null);

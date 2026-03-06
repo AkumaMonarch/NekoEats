@@ -191,11 +191,7 @@ export default function AdminCategories() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | undefined>(undefined);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
+  const fetchCategories = React.useCallback(async () => {
     try {
       const data = await categoryService.getCategories();
       setCategories(data);
@@ -204,7 +200,11 @@ export default function AdminCategories() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const handleCreate = () => {
     setEditingCategory(undefined);

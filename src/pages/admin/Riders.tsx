@@ -11,12 +11,14 @@ export default function AdminRiders() {
   const [editingRider, setEditingRider] = useState<Rider | null>(null);
   const [formData, setFormData] = useState({ name: '', phone: '', email: '' });
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
-  useEffect(() => {
-    loadRiders();
-  }, []);
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/admin/login');
+  };
 
-  const loadRiders = async () => {
+  const loadRiders = React.useCallback(async () => {
     try {
       const data = await riderService.getRiders();
       setRiders(data);
@@ -25,7 +27,11 @@ export default function AdminRiders() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadRiders();
+  }, [loadRiders]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,16 +87,15 @@ export default function AdminRiders() {
   return (
     <div className="min-h-screen bg-background-light dark:bg-[#120c0a] text-slate-900 dark:text-white">
       <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#120c0a]/95 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 px-4 py-4 flex items-center justify-between">
-        <button onClick={() => window.history.back()} className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 active:bg-gray-200 dark:active:bg-white/20">
-            <span className="material-symbols-outlined text-[22px]">arrow_back</span>
+        <button onClick={handleLogout} className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 active:bg-red-100 dark:active:bg-red-500/20">
+            <span className="material-symbols-outlined text-[22px]">logout</span>
         </button>
         <h1 className="text-lg font-bold">Rider Management</h1>
         <button 
             onClick={() => openModal()}
-            className="bg-primary text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary active:bg-primary/20"
         >
-            <span className="material-symbols-outlined text-sm">add</span>
-            Add Rider
+            <span className="material-symbols-outlined text-[22px]">add</span>
         </button>
       </header>
 

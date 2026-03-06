@@ -41,23 +41,7 @@ export default function AdminOrders() {
   
   const scrollRef = useDraggableScroll();
 
-  useEffect(() => {
-    fetchOrders();
-
-    // Subscribe to real-time changes
-    const subscription = supabase
-      .channel('public:orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-        fetchOrders(); // Refresh data on any change
-      })
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [activeTab, searchQuery]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = React.useCallback(async () => {
     try {
       let statusFilter = activeTab === 'all' ? undefined : activeTab;
       
@@ -87,7 +71,23 @@ export default function AdminOrders() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, searchQuery]);
+
+  useEffect(() => {
+    fetchOrders();
+
+    // Subscribe to real-time changes
+    const subscription = supabase
+      .channel('public:orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        fetchOrders(); // Refresh data on any change
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [fetchOrders]);
 
   const handleStatusUpdate = async (id: string, status: string) => {
     try {

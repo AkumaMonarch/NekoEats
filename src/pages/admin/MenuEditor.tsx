@@ -21,11 +21,7 @@ export default function AdminMenu() {
   
   const scrollRef = useDraggableScroll();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     try {
       const [items, cats] = await Promise.all([
         menuService.getMenuItems(),
@@ -38,7 +34,11 @@ export default function AdminMenu() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleCreate = () => {
     setEditingItem(undefined);

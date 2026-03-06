@@ -27,17 +27,16 @@ export default function AdminReports() {
   });
 
   useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const data = await reportsService.getStoreSettings();
+        setSettings(data);
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    };
     loadSettings();
   }, []);
-
-  const loadSettings = async () => {
-    try {
-      const data = await reportsService.getStoreSettings();
-      setSettings(data);
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-    }
-  };
 
   const handleLogout = async () => {
     await signOut();

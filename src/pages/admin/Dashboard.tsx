@@ -136,7 +136,7 @@ export default function AdminDashboard() {
         {/* Top Selling Items (Pie Chart) */}
         <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm min-w-0">
             <h3 className="font-bold text-base tracking-tight mb-4">Top Selling Items</h3>
-            <div className="h-64 w-full min-w-0" style={{ minHeight: '250px' }}>
+            <div className="h-64 w-full min-w-0 relative" style={{ minHeight: '250px', minWidth: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
@@ -172,7 +172,7 @@ export default function AdminDashboard() {
         {/* Busy Hours (Bar Chart) */}
         <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm min-w-0">
             <h3 className="font-bold text-base tracking-tight mb-4">Busy Hours</h3>
-            <div className="h-64 w-full min-w-0" style={{ minHeight: '250px' }}>
+            <div className="h-64 w-full min-w-0 relative" style={{ minHeight: '250px', minWidth: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats?.busyHours}>
                         <XAxis 
@@ -196,7 +196,7 @@ export default function AdminDashboard() {
         <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm min-w-0">
             <h3 className="font-bold text-base tracking-tight mb-4">Delivery vs Pickup</h3>
             <div className="flex items-center gap-6">
-                <div className="h-40 w-40 shrink-0 min-w-0" style={{ minHeight: '160px', minWidth: '160px' }}>
+                <div className="h-40 w-40 shrink-0 min-w-0 relative" style={{ minHeight: '160px', minWidth: '160px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
