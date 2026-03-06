@@ -395,7 +395,7 @@ export default function AdminOrders() {
                                                 </span>
                                             </div>
                                             <span className={cn(
-                                                "text-[9px] font-bold uppercase transition-colors duration-300",
+                                                "text-[10px] font-bold uppercase transition-colors duration-300",
                                                 isActive ? "text-primary" : "text-slate-400"
                                             )}>
                                                 {label}
@@ -406,12 +406,12 @@ export default function AdminOrders() {
                             </div>
 
                             {/* Actions */}
-                            <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 flex justify-between items-center mb-4">
+                            <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 flex justify-between items-center mb-4">
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Contact Customer</p>
-                                    <p className="font-bold text-lg">{order.customer_phone}</p>
+                                    <p className="font-bold text-base">{order.customer_phone}</p>
                                 </div>
-                                <a href={`tel:${order.customer_phone}`} className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
+                                <a href={`tel:${order.customer_phone}`} className="bg-green-500 text-white px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5">
                                     <span className="material-symbols-outlined text-lg">call</span>
                                     CALL
                                 </a>
@@ -478,21 +478,21 @@ export default function AdminOrders() {
                                     <div className="grid grid-cols-3 gap-2">
                                         <button 
                                             onClick={() => setPrintingOrder(order)}
-                                            className="py-3 rounded-xl border border-gray-200 dark:border-white/10 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5"
+                                            className="py-3 rounded-xl border border-gray-200 dark:border-white/10 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-gray-50 dark:hover:bg-white/5"
                                         >
                                             <span className="material-symbols-outlined text-lg">print</span>
                                             PRINT
                                         </button>
                                         <button 
                                             onClick={() => setHistoryOrder(order)}
-                                            className="py-3 rounded-xl border border-gray-200 dark:border-white/10 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5"
+                                            className="py-3 rounded-xl border border-gray-200 dark:border-white/10 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-gray-50 dark:hover:bg-white/5"
                                         >
                                             <span className="material-symbols-outlined text-lg">history</span>
                                             HISTORY
                                         </button>
                                         <button 
                                             onClick={() => handleStatusUpdate(order.id, 'cancelled')}
-                                            className="py-3 rounded-xl border border-red-500/20 text-red-500 font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-500/10"
+                                            className="py-3 rounded-xl border border-red-500/20 text-red-500 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-red-500/10"
                                         >
                                             <span className="material-symbols-outlined text-lg">close</span>
                                             REJECT
