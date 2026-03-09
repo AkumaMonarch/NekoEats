@@ -294,13 +294,13 @@ export default function AdminOrders() {
                             </div>
 
                             {/* Right: Content */}
-                            <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                            <div className="flex-1 min-w-0 flex flex-col justify-center">
                                 {/* Top Line: Code & Time */}
-                                <div className="flex justify-between items-start">
-                                    <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/10 text-xs font-bold text-slate-500 dark:text-slate-400">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/10 text-base font-black text-slate-800 dark:text-slate-100">
                                         {order.order_code}
                                     </span>
-                                    <span className="text-sm font-handwriting text-slate-400 dark:text-slate-300">
+                                    <span className="text-xs font-medium text-slate-400">
                                         {(() => {
                                             const diffInMinutes = Math.floor((new Date().getTime() - new Date(order.created_at).getTime()) / 60000);
                                             if (diffInMinutes < 60) return `${diffInMinutes} mins`;
@@ -312,22 +312,19 @@ export default function AdminOrders() {
                                 </div>
 
                                 {/* Middle Line: Name */}
-                                <h3 className="font-bold text-lg truncate text-slate-900 dark:text-white leading-tight">
+                                <h3 className="font-bold text-sm truncate text-slate-700 dark:text-slate-300 mb-1">
                                     {order.customer_name}
                                 </h3>
 
                                 {/* Bottom Line: Details & Expand */}
-                                <div className="flex justify-between items-end">
-                                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                        <div className="flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-[16px]">call</span>
-                                            <span>{order.customer_phone}</span>
-                                        </div>
-                                        <span>•</span>
-                                        <span>{order.order_items.length} Items</span>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                        <span className="font-medium">{order.order_items.length} {order.order_items.length === 1 ? 'Item' : 'Items'}</span>
+                                        <span className="text-[10px]">•</span>
+                                        <span className="font-bold text-slate-900 dark:text-white">Rs {(order.total + (order.delivery_fee || 0)).toFixed(2)}</span>
                                     </div>
                                     {expandedOrder !== order.id && (
-                                        <span className="material-symbols-outlined text-slate-400 text-xl">expand_more</span>
+                                        <span className="material-symbols-outlined text-slate-400 text-lg">expand_more</span>
                                     )}
                                 </div>
                             </div>
