@@ -86,11 +86,12 @@ export const orderService = {
       if (status && status !== 'all') {
         query = query.eq('status', status);
       } else {
-        // By default, exclude awaiting_confirmation AND cancelled AND pending orders from the main list
-        // This keeps the "All" view focused on valid orders (active + completed)
+        // By default, exclude awaiting_confirmation AND cancelled AND pending AND completed orders from the main list
+        // This keeps the "All" view focused on active orders only
         query = query.neq('status', 'awaiting_confirmation');
         query = query.neq('status', 'cancelled');
         query = query.neq('status', 'pending');
+        query = query.neq('status', 'completed');
       }
     }
 
@@ -136,7 +137,7 @@ export const orderService = {
   async getOrderCounts() {
     const { data, error } = await supabase
       .from('orders')
-      .select('status');
+      .select('status, service_option');
 
     if (error) throw error;
 
@@ -146,15 +147,32 @@ export const orderService = {
       preparing: 0,
       ready: 0,
       completed: 0,
-      cancelled: 0
+      cancelled: 0,
+      delivery: 0
     };
 
     data?.forEach((order: any) => {
       if (order.status in counts) {
         counts[order.status as keyof typeof counts]++;
       }
+      if (order.service_option === 'delivery' && order.status !== 'completed' && order.status !== 'cancelled') {
+        counts.delivery++;
+      }
     });
 
     return counts;
+  },
+
+  subscribeToOrders(callback: (payload: any) => void) {
+    const subscription = supabase
+      .channel('public:orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        callback(payload);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }
 };

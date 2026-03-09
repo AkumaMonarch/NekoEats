@@ -35,13 +35,16 @@ export default function AdminOrders() {
     preparing: 0,
     ready: 0,
     completed: 0,
-    cancelled: 0
+    cancelled: 0,
+    delivery: 0
   });
   const { settings } = useStoreSettings();
+  const [newOrderNotification, setNewOrderNotification] = useState<string | null>(null);
   
   const scrollRef = useDraggableScroll();
 
-  const fetchOrders = React.useCallback(async () => {
+  const fetchOrders = React.useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true);
     try {
       let statusFilter = activeTab === 'all' ? undefined : activeTab;
       
@@ -73,21 +76,53 @@ export default function AdminOrders() {
     }
   }, [activeTab, searchQuery]);
 
+  const fetchOrdersRef = React.useRef(fetchOrders);
   useEffect(() => {
-    fetchOrders();
+    fetchOrdersRef.current = fetchOrders;
+  }, [fetchOrders]);
 
+  // Fetch orders when tab or search changes
+  useEffect(() => {
+    fetchOrders(true);
+  }, [fetchOrders]);
+
+  // Setup real-time subscription ONCE
+  useEffect(() => {
     // Subscribe to real-time changes
-    const subscription = supabase
-      .channel('public:orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-        fetchOrders(); // Refresh data on any change
-      })
-      .subscribe();
+    const unsubscribe = orderService.subscribeToOrders((payload) => {
+      fetchOrdersRef.current(); // Refresh data on any change
+      
+      // Show notification for new orders
+      if (payload.eventType === 'INSERT') {
+        const orderCode = payload.new?.order_code || 'New Order';
+        setNewOrderNotification(`New order received: ${orderCode}`);
+        
+        // Play notification sound
+        try {
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+          audio.play().catch(e => console.log('Audio play failed:', e));
+        } catch (e) {
+          console.log('Audio play failed:', e);
+        }
+        
+        // Hide after 5 seconds
+        setTimeout(() => {
+          setNewOrderNotification(null);
+        }, 5000);
+      }
+    });
+
+    // Fallback polling every 10 seconds to ensure data is always fresh
+    // even if Supabase Realtime is not enabled on the table
+    const intervalId = setInterval(() => {
+      fetchOrdersRef.current();
+    }, 10000);
 
     return () => {
-      subscription.unsubscribe();
+      unsubscribe();
+      clearInterval(intervalId);
     };
-  }, [fetchOrders]);
+  }, []);
 
   const handleStatusUpdate = async (id: string, status: string) => {
     try {
@@ -173,6 +208,19 @@ export default function AdminOrders() {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-[#0c0605] text-slate-900 dark:text-white">
+      {newOrderNotification && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-primary text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <span className="material-symbols-outlined">notifications_active</span>
+          <span className="font-bold">{newOrderNotification}</span>
+          <button 
+            onClick={() => setNewOrderNotification(null)}
+            className="ml-2 h-6 w-6 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[14px]">close</span>
+          </button>
+        </div>
+      )}
+
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0c0605]/95 backdrop-blur-xl px-5 py-4 border-b border-gray-200 dark:border-white/5">
         <div className="flex items-center justify-between mb-4">
             {isSearchOpen ? (
@@ -204,12 +252,14 @@ export default function AdminOrders() {
                         <h1 className="text-xl font-bold">Live Orders</h1>
                         <div className="flex items-center gap-2 mt-1">
                             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                            <span className="text-xs font-bold text-primary uppercase tracking-wider">{orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length} Active</span>
+                            <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                                {(orderCounts.received || 0) + (orderCounts.preparing || 0) + (orderCounts.ready || 0)} Active
+                            </span>
                         </div>
                     </div>
                     <div className="flex gap-2">
                         <button 
-                            onClick={fetchOrders} 
+                            onClick={() => fetchOrders(true)} 
                             className="h-10 w-10 rounded-full bg-[#160e0c] border border-white/10 flex items-center justify-center active:scale-95 transition-transform text-white/70 hover:text-white"
                             title="Refresh Orders"
                         >
@@ -233,10 +283,7 @@ export default function AdminOrders() {
         >
             {['All', 'Received', 'Preparing', 'Ready', 'Delivery', 'Completed', 'Cancelled'].map((tab) => {
                 const statusKey = tab.toLowerCase();
-                // For 'delivery' tab, we might need a custom count or just rely on filtering
-                const count = statusKey === 'all' ? 0 : 
-                              statusKey === 'delivery' ? orders.filter(o => o.service_option === 'delivery' && o.status !== 'completed' && o.status !== 'cancelled').length :
-                              orderCounts[statusKey as keyof typeof orderCounts] || 0;
+                const count = statusKey === 'all' ? 0 : orderCounts[statusKey as keyof typeof orderCounts] || 0;
                 
                 const colors = statusColors[statusKey as keyof typeof statusColors] || statusColors.all;
                 
