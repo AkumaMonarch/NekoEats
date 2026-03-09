@@ -161,6 +161,16 @@ export default function AdminOrders() {
 
   const filteredOrders = orders; // Filtering is now handled by the API/Supabase query
 
+  const statusColors = {
+    all: { bg: 'bg-primary', text: 'text-primary', border: 'border-primary/50', shadow: 'shadow-primary/20', ring: 'ring-primary/20', bgLight: 'bg-primary/10', textLight: 'text-primary' },
+    received: { bg: 'bg-blue-500', text: 'text-blue-500', border: 'border-blue-500/50', shadow: 'shadow-blue-500/20', ring: 'ring-blue-500/20', bgLight: 'bg-blue-500/10', textLight: 'text-blue-600 dark:text-blue-400' },
+    preparing: { bg: 'bg-amber-500', text: 'text-amber-500', border: 'border-amber-500/50', shadow: 'shadow-amber-500/20', ring: 'ring-amber-500/20', bgLight: 'bg-amber-500/10', textLight: 'text-amber-600 dark:text-amber-400' },
+    ready: { bg: 'bg-emerald-500', text: 'text-emerald-500', border: 'border-emerald-500/50', shadow: 'shadow-emerald-500/20', ring: 'ring-emerald-500/20', bgLight: 'bg-emerald-500/10', textLight: 'text-emerald-600 dark:text-emerald-400' },
+    delivery: { bg: 'bg-purple-500', text: 'text-purple-500', border: 'border-purple-500/50', shadow: 'shadow-purple-500/20', ring: 'ring-purple-500/20', bgLight: 'bg-purple-500/10', textLight: 'text-purple-600 dark:text-purple-400' },
+    completed: { bg: 'bg-slate-500', text: 'text-slate-500', border: 'border-slate-500/50', shadow: 'shadow-slate-500/20', ring: 'ring-slate-500/20', bgLight: 'bg-slate-500/10', textLight: 'text-slate-600 dark:text-slate-400' },
+    cancelled: { bg: 'bg-red-500', text: 'text-red-500', border: 'border-red-500/50', shadow: 'shadow-red-500/20', ring: 'ring-red-500/20', bgLight: 'bg-red-500/10', textLight: 'text-red-600 dark:text-red-400' },
+  };
+
   return (
     <div className="min-h-screen bg-background-light dark:bg-[#0c0605] text-slate-900 dark:text-white">
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0c0605]/95 backdrop-blur-xl px-5 py-4 border-b border-gray-200 dark:border-white/5">
@@ -228,6 +238,8 @@ export default function AdminOrders() {
                               statusKey === 'delivery' ? orders.filter(o => o.service_option === 'delivery' && o.status !== 'completed' && o.status !== 'cancelled').length :
                               orderCounts[statusKey as keyof typeof orderCounts] || 0;
                 
+                const colors = statusColors[statusKey as keyof typeof statusColors] || statusColors.all;
+                
                 return (
                     <button
                         key={tab}
@@ -235,7 +247,7 @@ export default function AdminOrders() {
                         className={cn(
                             "px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors flex items-center gap-2",
                             activeTab === tab.toLowerCase()
-                                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                ? `${colors.bg} text-white shadow-lg ${colors.shadow}`
                                 : "bg-gray-100 dark:bg-white/5 text-slate-500 dark:text-slate-400"
                         )}
                     >
@@ -244,7 +256,7 @@ export default function AdminOrders() {
                             <span className={cn(
                                 "h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center text-[10px]",
                                 activeTab === tab.toLowerCase()
-                                    ? "bg-white text-primary"
+                                    ? `bg-white ${colors.textLight}`
                                     : "bg-gray-200 dark:bg-white/10 text-slate-600 dark:text-slate-300"
                             )}>
                                 {count}
@@ -256,10 +268,10 @@ export default function AdminOrders() {
         </div>
       </header>
 
-      <main className="p-4 space-y-4 max-w-md mx-auto">
+      <main className="p-4 max-w-7xl mx-auto">
         {loading ? (
-            <div className="space-y-4">
-                {[1,2,3].map(i => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1,2,3,4,5,6].map(i => (
                     <div key={i} className="h-24 bg-gray-100 dark:bg-white/5 rounded-2xl animate-pulse"></div>
                 ))}
             </div>
@@ -268,25 +280,32 @@ export default function AdminOrders() {
                 <p>{searchQuery ? 'No matching orders found' : 'No orders found'}</p>
             </div>
         ) : (
-            filteredOrders.map((order) => (
-                <div 
-                    key={order.id}
-                    className={cn(
-                        "rounded-2xl border transition-all overflow-hidden",
-                        expandedOrder === order.id 
-                            ? "bg-white dark:bg-[#160e0c] border-primary/50 shadow-lg ring-1 ring-primary/20" 
-                            : "bg-white dark:bg-[#160e0c] border-gray-200 dark:border-white/5"
-                    )}
-                >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+                {filteredOrders.map((order) => {
+                    const cardColors = statusColors[order.status as keyof typeof statusColors] || statusColors.all;
+                    
+                    return (
                     <div 
-                        className="p-4 cursor-pointer"
+                        key={order.id}
+                        className={cn(
+                            "rounded-2xl border transition-all overflow-hidden relative",
+                            expandedOrder === order.id 
+                                ? `bg-white dark:bg-[#160e0c] ${cardColors.border} shadow-lg ring-1 ${cardColors.ring}` 
+                                : `bg-white dark:bg-[#160e0c] border-gray-200 dark:border-white/5 hover:${cardColors.border}`
+                        )}
+                    >
+                        {/* Left border accent */}
+                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", cardColors.bg)}></div>
+
+                    <div 
+                        className="p-4 pl-5 cursor-pointer"
                         onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                     >
                         <div className="flex gap-4">
                             {/* Left: Large Icon */}
                             <div className={cn(
-                                "h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
-                                order.service_option === 'delivery' ? "bg-[#1E1510] text-orange-500 border border-orange-500/20" : "bg-[#0F131A] text-blue-500 border border-blue-500/20"
+                                "h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border",
+                                cardColors.bgLight, cardColors.textLight, cardColors.border
                             )}>
                                 <span className="material-symbols-outlined text-3xl">
                                     {order.service_option === 'delivery' ? 'two_wheeler' : 'shopping_bag'}
@@ -297,7 +316,7 @@ export default function AdminOrders() {
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                                 {/* Top Line: Code & Time */}
                                 <div className="flex justify-between items-center mb-1">
-                                    <span className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/10 text-base font-black text-slate-800 dark:text-slate-100">
+                                    <span className={cn("px-2.5 py-1 rounded-lg text-base font-black", cardColors.bgLight, cardColors.textLight)}>
                                         {order.order_code}
                                     </span>
                                     <span className="text-xs font-medium text-slate-400">
@@ -547,7 +566,9 @@ export default function AdminOrders() {
                         </div>
                     )}
                 </div>
-            ))
+                );
+                })}
+            </div>
         )}
       </main>
       

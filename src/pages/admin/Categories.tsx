@@ -232,7 +232,7 @@ export default function AdminCategories() {
   };
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-[#120c0a] text-slate-900 dark:text-white">
+    <div className="bg-background-light dark:bg-[#120c0a] text-slate-900 dark:text-white">
       <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#120c0a]/95 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 px-4 py-4 flex items-center justify-between">
         <button 
             onClick={handleLogout} 
@@ -250,15 +250,15 @@ export default function AdminCategories() {
         </button>
       </header>
 
-      <main className="p-4 space-y-4 max-w-md mx-auto">
+      <main className="p-4 max-w-7xl mx-auto">
         {loading ? (
-            <div className="space-y-4">
-                {[1,2,3].map(i => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                {[1,2,3,4].map(i => (
                     <div key={i} className="h-20 bg-gray-100 dark:bg-white/5 rounded-2xl animate-pulse"></div>
                 ))}
             </div>
         ) : (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                 {categories.map((category) => (
                     <div key={category.id} className="bg-white dark:bg-[#1e1411] border border-gray-200 dark:border-white/5 rounded-2xl p-3 flex items-center gap-4 shadow-sm">
                         <div className="h-16 w-16 rounded-xl bg-gray-100 dark:bg-white/5 overflow-hidden shrink-0">

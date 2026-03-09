@@ -85,7 +85,7 @@ export default function AdminRiders() {
   if (loading) return <div className="p-8 text-center">Loading riders...</div>;
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-[#120c0a] text-slate-900 dark:text-white">
+    <div className="bg-background-light dark:bg-[#120c0a] text-slate-900 dark:text-white">
       <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#120c0a]/95 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 px-4 py-4 flex items-center justify-between">
         <button onClick={handleLogout} className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 active:bg-red-100 dark:active:bg-red-500/20">
             <span className="material-symbols-outlined text-[22px]">logout</span>
@@ -99,8 +99,8 @@ export default function AdminRiders() {
         </button>
       </header>
 
-      <main className="p-4 max-w-4xl mx-auto">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <main className="p-4 max-w-7xl mx-auto">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {riders.map(rider => (
             <div key={rider.id} className="bg-white dark:bg-[#1e1411] p-4 rounded-2xl border border-gray-200 dark:border-white/5 shadow-sm">
               <div className="flex justify-between items-start mb-3">

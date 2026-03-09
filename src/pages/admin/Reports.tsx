@@ -113,7 +113,7 @@ export default function AdminReports() {
   };
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-[#0c0605] text-slate-900 dark:text-white pb-28">
+    <div className="bg-background-light dark:bg-[#0c0605] text-slate-900 dark:text-white">
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0c0605]/95 backdrop-blur-xl px-5 py-4 border-b border-gray-200 dark:border-white/5">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -134,7 +134,7 @@ export default function AdminReports() {
         </div>
       </header>
 
-      <main className="p-5 space-y-6 max-w-md mx-auto">
+      <main className="p-5 space-y-6 max-w-3xl mx-auto">
         
         {/* Annual Income Summary */}
         <section className="bg-white dark:bg-[#160e0c] border border-gray-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">

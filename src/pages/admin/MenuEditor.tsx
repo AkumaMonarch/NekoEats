@@ -150,7 +150,7 @@ export default function AdminMenu() {
         </div>
       </header>
 
-      <main className="flex-1 px-4 py-6 space-y-4 max-w-md mx-auto">
+      <main className="flex-1 px-4 py-6 space-y-4 max-w-7xl mx-auto">
         <div className="flex items-center justify-between px-1">
             <p className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-widest">Total Items: {menuItems.length}</p>
             <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -160,13 +160,13 @@ export default function AdminMenu() {
         </div>
 
         {loading ? (
-            <div className="space-y-4">
-                {[1,2,3,4].map(i => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                {[1,2,3,4,5,6,7,8].map(i => (
                     <div key={i} className="h-28 bg-gray-100 dark:bg-white/5 rounded-2xl animate-pulse"></div>
                 ))}
             </div>
         ) : (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                 {filteredItems.map((item) => (
                     <div key={item.id} className="bg-white dark:bg-[#1e1411] border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm transition-all">
                         <div className="p-3.5 flex gap-4">
@@ -178,42 +178,42 @@ export default function AdminMenu() {
                                     </div>
                                 )}
                             </div>
-                            <div className="flex flex-1 flex-col justify-between py-0.5">
-                                <div className="flex justify-between items-start">
-                                    <div className={!item.in_stock ? 'opacity-60' : ''}>
-                                        <h4 className="text-[15px] font-bold leading-snug line-clamp-1">{item.name}</h4>
-                                        <p className="text-[13px] font-medium text-primary mt-0.5">
+                            <div className="flex flex-1 flex-col justify-between py-0.5 min-w-0">
+                                <div className="flex justify-between items-start gap-2">
+                                    <div className={`min-w-0 ${!item.in_stock ? 'opacity-60' : ''}`}>
+                                        <h4 className="text-[15px] font-bold leading-snug truncate">{item.name}</h4>
+                                        <p className="text-[13px] font-medium text-primary mt-0.5 truncate">
                                             Rs {item.price.toFixed(2)} 
                                             <span className="text-slate-400 dark:text-white/30 mx-1.5">/</span> 
                                             <span className="text-slate-500 capitalize">{item.category}</span>
                                         </p>
                                     </div>
-                                    <button className="text-slate-300 dark:text-white/20"><span className="material-symbols-outlined">more_horiz</span></button>
+                                    <button className="text-slate-300 dark:text-white/20 shrink-0"><span className="material-symbols-outlined">more_horiz</span></button>
                                 </div>
-                                <div className="flex items-center justify-between mt-2">
-                                    <div className="flex items-center gap-2.5">
-                                        <span className={`text-[11px] font-bold uppercase tracking-wider ${item.in_stock ? 'text-green-500' : 'text-slate-400'}`}>
-                                            {item.in_stock ? 'In Stock' : 'Out of Stock'}
+                                <div className="flex items-center justify-between mt-2 gap-1">
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <span className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${item.in_stock ? 'text-green-500' : 'text-slate-400'}`}>
+                                            {item.in_stock ? 'In Stock' : 'Out'}
                                         </span>
                                         <button 
                                             onClick={() => handleToggleStock(item.id, item.in_stock)}
-                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 ${item.in_stock ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}
+                                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 ${item.in_stock ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}
                                         >
-                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${item.in_stock ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
+                                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${item.in_stock ? 'translate-x-4' : 'translate-x-0.5'}`}></span>
                                         </button>
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-1.5 shrink-0">
                                         <button 
                                             onClick={() => handleEdit(item)}
-                                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/10 text-slate-600 dark:text-white/70 active:bg-gray-200 dark:active:bg-white/20"
+                                            className="h-8 w-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-white/10 text-slate-600 dark:text-white/70 active:bg-gray-200 dark:active:bg-white/20"
                                         >
-                                            <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                                            <span className="material-symbols-outlined text-[16px]">edit_note</span>
                                         </button>
                                         <button 
                                             onClick={() => handleDelete(item.id)}
-                                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 active:bg-red-500/20"
+                                            className="h-8 w-8 flex items-center justify-center rounded-lg bg-red-500/10 text-red-500 active:bg-red-500/20"
                                         >
-                                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                                            <span className="material-symbols-outlined text-[16px]">delete</span>
                                         </button>
                                     </div>
                                 </div>
