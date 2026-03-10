@@ -67,6 +67,84 @@ export default function TrackDelivery() {
         .setLngLat([data.rider_current_lng, data.rider_current_lat])
         .addTo(map.current);
     }
+    
+    // Update route when rider moves
+    if (delivery) {
+      updateRouteAndBounds({ ...delivery, ...data });
+    }
+  };
+
+  const updateRouteAndBounds = async (currentDelivery: Delivery) => {
+    if (!map.current) return;
+
+    let startLat = currentDelivery.restaurant_lat;
+    let startLng = currentDelivery.restaurant_lng;
+    let endLat = currentDelivery.customer_lat;
+    let endLng = currentDelivery.customer_lng;
+
+    // If we have rider location, use it as the start point
+    if (currentDelivery.rider_current_lat && currentDelivery.rider_current_lng) {
+      startLat = currentDelivery.rider_current_lat;
+      startLng = currentDelivery.rider_current_lng;
+      
+      // If status is assigned, rider is going to restaurant
+      if (currentDelivery.status === 'assigned') {
+        endLat = currentDelivery.restaurant_lat;
+        endLng = currentDelivery.restaurant_lng;
+      }
+    }
+
+    try {
+      const route = await mapService.getRoute(startLat, startLng, endLat, endLng);
+
+      if (route && route.geometry) {
+        const source = map.current.getSource('route') as maplibregl.GeoJSONSource;
+        if (source) {
+          source.setData({
+            type: 'Feature',
+            properties: {},
+            geometry: route.geometry,
+          });
+        } else {
+          map.current.addSource('route', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: route.geometry,
+            },
+          });
+
+          map.current.addLayer({
+            id: 'route',
+            type: 'line',
+            source: 'route',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
+            paint: {
+              'line-color': '#3B82F6',
+              'line-width': 4,
+            },
+          });
+        }
+
+        // Fit bounds
+        const bounds = new maplibregl.LngLatBounds();
+        bounds.extend([startLng, startLat]);
+        bounds.extend([endLng, endLat]);
+        
+        // Also include customer if rider is going to restaurant, so customer sees the whole picture
+        if (currentDelivery.status === 'assigned') {
+          bounds.extend([currentDelivery.customer_lng, currentDelivery.customer_lat]);
+        }
+        
+        map.current.fitBounds(bounds, { padding: 50 });
+      }
+    } catch (error) {
+      console.error('Failed to update route:', error);
+    }
   };
 
   useEffect(() => {
@@ -97,45 +175,9 @@ export default function TrackDelivery() {
       // Initial Rider Marker
       if (delivery.rider_current_lng && delivery.rider_current_lat) {
         updateRiderMarker(delivery);
-      }
-
-      // Draw Route
-      const route = await mapService.getRoute(
-        delivery.restaurant_lat,
-        delivery.restaurant_lng,
-        delivery.customer_lat,
-        delivery.customer_lng
-      );
-
-      if (route && route.geometry) {
-        map.current.addSource('route', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: route.geometry,
-          },
-        });
-
-        map.current.addLayer({
-          id: 'route',
-          type: 'line',
-          source: 'route',
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round',
-          },
-          paint: {
-            'line-color': '#3B82F6',
-            'line-width': 4,
-          },
-        });
-
-        // Fit bounds
-        const bounds = new maplibregl.LngLatBounds();
-        bounds.extend([delivery.restaurant_lng, delivery.restaurant_lat]);
-        bounds.extend([delivery.customer_lng, delivery.customer_lat]);
-        map.current.fitBounds(bounds, { padding: 50 });
+      } else {
+        // Draw initial static route if rider location not known yet
+        updateRouteAndBounds(delivery);
       }
     });
   }, [delivery]);
@@ -182,6 +224,23 @@ export default function TrackDelivery() {
 
       <div className="flex-1 relative min-h-[50vh]">
         <div ref={mapContainer} className="absolute inset-0" />
+        
+        {delivery.rider_current_lat && delivery.rider_current_lng && (
+          <button 
+            onClick={() => {
+              if (map.current && delivery.rider_current_lat && delivery.rider_current_lng) {
+                map.current.flyTo({
+                  center: [delivery.rider_current_lng, delivery.rider_current_lat],
+                  zoom: 15
+                });
+              }
+            }}
+            className="absolute bottom-6 right-6 bg-white text-slate-900 p-3 rounded-full shadow-xl z-20 flex items-center justify-center"
+            title="Center on Rider"
+          >
+            <span className="material-symbols-outlined">my_location</span>
+          </button>
+        )}
       </div>
     </div>
   );
