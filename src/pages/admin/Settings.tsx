@@ -611,19 +611,19 @@ export default function AdminSettings() {
                 </div>
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="font-bold text-sm text-slate-900 dark:text-white">Clear Test Data</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Permanently delete all orders, order items, and deliveries.</p>
+                        <p className="font-bold text-sm text-slate-900 dark:text-white">Clear All Data</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Permanently delete all past completed orders, active orders, deliveries, and customer records.</p>
                     </div>
                     <button 
                         onClick={async () => {
-                            if (window.confirm('Are you absolutely sure you want to delete all orders and deliveries? This action cannot be undone.')) {
+                            if (window.confirm('Are you absolutely sure you want to delete all orders, deliveries, and customer records? This action cannot be undone.')) {
                                 try {
                                     setSaving(true);
                                     await settingsService.clearTestData();
-                                    alert('Test data cleared successfully.');
+                                    alert('All data cleared successfully.');
                                 } catch (error) {
-                                    console.error('Failed to clear test data:', error);
-                                    alert('Failed to clear test data.');
+                                    console.error('Failed to clear data:', error);
+                                    alert('Failed to clear data.');
                                 } finally {
                                     setSaving(false);
                                 }

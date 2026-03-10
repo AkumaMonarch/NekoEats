@@ -39,29 +39,46 @@ export const settingsService = {
   },
 
   async clearTestData() {
-    // Delete all deliveries
-    const { error: deliveriesError } = await supabase
-      .from('deliveries')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+    // Call the secure RPC function to clear data
+    // This requires creating the clear_test_data function in Supabase
+    const { error } = await supabase.rpc('clear_test_data');
+    
+    if (error) {
+      console.error('RPC failed, falling back to direct delete:', error);
       
-    if (deliveriesError) throw deliveriesError;
+      // Fallback to direct deletes if RPC is not available
+      // Delete all deliveries
+      const { error: deliveriesError } = await supabase
+        .from('deliveries')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+        
+      if (deliveriesError) throw deliveriesError;
 
-    // Delete all order items
-    const { error: orderItemsError } = await supabase
-      .from('order_items')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-      
-    if (orderItemsError) throw orderItemsError;
+      // Delete all order items
+      const { error: orderItemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+        
+      if (orderItemsError) throw orderItemsError;
 
-    // Delete all orders
-    const { error: ordersError } = await supabase
-      .from('orders')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-      
-    if (ordersError) throw ordersError;
+      // Delete all order status history
+      const { error: historyError } = await supabase
+        .from('order_status_history')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+        
+      if (historyError) throw historyError;
+
+      // Delete all orders
+      const { error: ordersError } = await supabase
+        .from('orders')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+        
+      if (ordersError) throw ordersError;
+    }
 
     return true;
   }
