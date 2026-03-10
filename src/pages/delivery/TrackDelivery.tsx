@@ -50,9 +50,9 @@ export default function TrackDelivery() {
     if (!map.current || !data.rider_current_lat || !data.rider_current_lng) return;
 
     if (riderMarker.current) {
-      riderMarker.current.setLngLat([data.rider_current_lng, data.rider_current_lat]);
+      riderMarker.current.setLngLat([Number(data.rider_current_lng), Number(data.rider_current_lat)]);
       if (data.rider_heading) {
-        riderMarker.current.setRotation(data.rider_heading);
+        riderMarker.current.setRotation(Number(data.rider_heading));
       }
     } else {
       // Create marker if it doesn't exist
@@ -64,7 +64,7 @@ export default function TrackDelivery() {
       el.style.backgroundSize = 'cover';
 
       riderMarker.current = new maplibregl.Marker({ element: el })
-        .setLngLat([data.rider_current_lng, data.rider_current_lat])
+        .setLngLat([Number(data.rider_current_lng), Number(data.rider_current_lat)])
         .addTo(map.current);
     }
     
@@ -84,8 +84,8 @@ export default function TrackDelivery() {
 
     // If we have rider location, use it as the start point
     if (currentDelivery.rider_current_lat && currentDelivery.rider_current_lng) {
-      startLat = currentDelivery.rider_current_lat;
-      startLng = currentDelivery.rider_current_lng;
+      startLat = Number(currentDelivery.rider_current_lat) || 0;
+      startLng = Number(currentDelivery.rider_current_lng) || 0;
       
       // If status is assigned, rider is going to restaurant
       if (currentDelivery.status === 'assigned') {
@@ -140,7 +140,15 @@ export default function TrackDelivery() {
           bounds.extend([Number(currentDelivery.customer_lng) || 0, Number(currentDelivery.customer_lat) || 0]);
         }
         
-        map.current.fitBounds(bounds, { padding: 50 });
+        if (!bounds.isEmpty()) {
+          const sw = bounds.getSouthWest();
+          const ne = bounds.getNorthEast();
+          if (sw.lng !== ne.lng || sw.lat !== ne.lat) {
+            map.current.fitBounds(bounds, { padding: 50 });
+          } else {
+            map.current.flyTo({ center: sw, zoom: 13 });
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to update route:', error);
@@ -156,6 +164,11 @@ export default function TrackDelivery() {
       center: [Number(delivery.restaurant_lng) || 0, Number(delivery.restaurant_lat) || 0],
       zoom: 13,
     });
+
+    // Ensure map resizes correctly if container dimensions change
+    setTimeout(() => {
+      map.current?.resize();
+    }, 100);
 
     map.current.on('load', async () => {
       if (!map.current || !delivery) return;
@@ -222,15 +235,15 @@ export default function TrackDelivery() {
         )}
       </div>
 
-      <div className="flex-1 relative min-h-[50vh] w-full overflow-hidden">
-        <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
+      <div className="flex-1 relative min-h-[50vh] w-full overflow-hidden flex flex-col">
+        <div ref={mapContainer} className="flex-1 w-full" />
         
         {delivery.rider_current_lat && delivery.rider_current_lng && (
           <button 
             onClick={() => {
               if (map.current && delivery.rider_current_lat && delivery.rider_current_lng) {
                 map.current.flyTo({
-                  center: [delivery.rider_current_lng, delivery.rider_current_lat],
+                  center: [Number(delivery.rider_current_lng), Number(delivery.rider_current_lat)],
                   zoom: 15
                 });
               }

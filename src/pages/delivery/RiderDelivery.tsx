@@ -42,6 +42,11 @@ export default function RiderDelivery() {
       zoom: 13,
     });
 
+    // Ensure map resizes correctly if container dimensions change
+    setTimeout(() => {
+      map.current?.resize();
+    }, 100);
+
     map.current.on('load', async () => {
       if (!map.current || !delivery) return;
 
@@ -67,7 +72,7 @@ export default function RiderDelivery() {
         el.style.backgroundSize = 'cover';
 
         riderMarker.current = new maplibregl.Marker({ element: el })
-          .setLngLat([delivery.rider_current_lng, delivery.rider_current_lat])
+          .setLngLat([Number(delivery.rider_current_lng), Number(delivery.rider_current_lat)])
           .addTo(map.current);
       }
 
@@ -107,7 +112,16 @@ export default function RiderDelivery() {
         const bounds = new maplibregl.LngLatBounds();
         bounds.extend([Number(delivery.restaurant_lng) || 0, Number(delivery.restaurant_lat) || 0]);
         bounds.extend([Number(delivery.customer_lng) || 0, Number(delivery.customer_lat) || 0]);
-        map.current.fitBounds(bounds, { padding: 50 });
+        
+        if (!bounds.isEmpty()) {
+          const sw = bounds.getSouthWest();
+          const ne = bounds.getNorthEast();
+          if (sw.lng !== ne.lng || sw.lat !== ne.lat) {
+            map.current.fitBounds(bounds, { padding: 50 });
+          } else {
+            map.current.flyTo({ center: sw, zoom: 13 });
+          }
+        }
       }
     });
   }, [delivery]);
@@ -274,8 +288,8 @@ export default function RiderDelivery() {
         )}
       </div>
 
-      <div className="flex-1 relative min-h-[50vh] w-full overflow-hidden">
-        <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
+      <div className="flex-1 relative min-h-[50vh] w-full overflow-hidden flex flex-col">
+        <div ref={mapContainer} className="flex-1 w-full" />
         
         <button 
           onClick={updateLocation}
