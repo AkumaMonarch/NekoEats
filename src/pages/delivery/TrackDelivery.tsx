@@ -77,10 +77,10 @@ export default function TrackDelivery() {
   const updateRouteAndBounds = async (currentDelivery: Delivery) => {
     if (!map.current) return;
 
-    let startLat = currentDelivery.restaurant_lat;
-    let startLng = currentDelivery.restaurant_lng;
-    let endLat = currentDelivery.customer_lat;
-    let endLng = currentDelivery.customer_lng;
+    let startLat = Number(currentDelivery.restaurant_lat) || 0;
+    let startLng = Number(currentDelivery.restaurant_lng) || 0;
+    let endLat = Number(currentDelivery.customer_lat) || 0;
+    let endLng = Number(currentDelivery.customer_lng) || 0;
 
     // If we have rider location, use it as the start point
     if (currentDelivery.rider_current_lat && currentDelivery.rider_current_lng) {
@@ -89,8 +89,8 @@ export default function TrackDelivery() {
       
       // If status is assigned, rider is going to restaurant
       if (currentDelivery.status === 'assigned') {
-        endLat = currentDelivery.restaurant_lat;
-        endLng = currentDelivery.restaurant_lng;
+        endLat = Number(currentDelivery.restaurant_lat) || 0;
+        endLng = Number(currentDelivery.restaurant_lng) || 0;
       }
     }
 
@@ -137,7 +137,7 @@ export default function TrackDelivery() {
         
         // Also include customer if rider is going to restaurant, so customer sees the whole picture
         if (currentDelivery.status === 'assigned') {
-          bounds.extend([currentDelivery.customer_lng, currentDelivery.customer_lat]);
+          bounds.extend([Number(currentDelivery.customer_lng) || 0, Number(currentDelivery.customer_lat) || 0]);
         }
         
         map.current.fitBounds(bounds, { padding: 50 });
@@ -153,7 +153,7 @@ export default function TrackDelivery() {
     map.current = new maplibregl.Map({
       container: mapContainer.current,
       style: 'https://tiles.openfreemap.org/styles/bright',
-      center: [delivery.restaurant_lng, delivery.restaurant_lat],
+      center: [Number(delivery.restaurant_lng) || 0, Number(delivery.restaurant_lat) || 0],
       zoom: 13,
     });
 
@@ -162,14 +162,14 @@ export default function TrackDelivery() {
 
       // Add Restaurant Marker
       new maplibregl.Marker({ color: '#EF4444' })
-        .setLngLat([delivery.restaurant_lng, delivery.restaurant_lat])
+        .setLngLat([Number(delivery.restaurant_lng) || 0, Number(delivery.restaurant_lat) || 0])
         .setPopup(new maplibregl.Popup().setText('Restaurant'))
         .addTo(map.current);
 
       // Add Customer Marker
       new maplibregl.Marker({ color: '#3B82F6' })
-        .setLngLat([delivery.customer_lng, delivery.customer_lat])
-        .setPopup(new maplibregl.Popup().setText(delivery.customer_address))
+        .setLngLat([Number(delivery.customer_lng) || 0, Number(delivery.customer_lat) || 0])
+        .setPopup(new maplibregl.Popup().setText(delivery.customer_address || 'Customer'))
         .addTo(map.current);
 
       // Initial Rider Marker
@@ -222,8 +222,8 @@ export default function TrackDelivery() {
         )}
       </div>
 
-      <div className="flex-1 relative min-h-[50vh]">
-        <div ref={mapContainer} className="absolute inset-0" />
+      <div className="flex-1 relative min-h-[50vh] w-full overflow-hidden">
+        <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
         
         {delivery.rider_current_lat && delivery.rider_current_lng && (
           <button 

@@ -38,7 +38,7 @@ export default function RiderDelivery() {
     map.current = new maplibregl.Map({
       container: mapContainer.current,
       style: 'https://tiles.openfreemap.org/styles/bright',
-      center: [delivery.restaurant_lng, delivery.restaurant_lat],
+      center: [Number(delivery.restaurant_lng) || 0, Number(delivery.restaurant_lat) || 0],
       zoom: 13,
     });
 
@@ -47,14 +47,14 @@ export default function RiderDelivery() {
 
       // Add Restaurant Marker
       new maplibregl.Marker({ color: '#EF4444' }) // Red
-        .setLngLat([delivery.restaurant_lng, delivery.restaurant_lat])
+        .setLngLat([Number(delivery.restaurant_lng) || 0, Number(delivery.restaurant_lat) || 0])
         .setPopup(new maplibregl.Popup().setText('Restaurant'))
         .addTo(map.current);
 
       // Add Customer Marker
       new maplibregl.Marker({ color: '#3B82F6' }) // Blue
-        .setLngLat([delivery.customer_lng, delivery.customer_lat])
-        .setPopup(new maplibregl.Popup().setText(delivery.customer_address))
+        .setLngLat([Number(delivery.customer_lng) || 0, Number(delivery.customer_lat) || 0])
+        .setPopup(new maplibregl.Popup().setText(delivery.customer_address || 'Customer'))
         .addTo(map.current);
 
       // Add Rider Marker if location exists
@@ -73,10 +73,10 @@ export default function RiderDelivery() {
 
       // Draw Route
       const route = await mapService.getRoute(
-        delivery.restaurant_lat,
-        delivery.restaurant_lng,
-        delivery.customer_lat,
-        delivery.customer_lng
+        Number(delivery.restaurant_lat) || 0,
+        Number(delivery.restaurant_lng) || 0,
+        Number(delivery.customer_lat) || 0,
+        Number(delivery.customer_lng) || 0
       );
 
       if (route && route.geometry) {
@@ -105,8 +105,8 @@ export default function RiderDelivery() {
 
         // Fit bounds
         const bounds = new maplibregl.LngLatBounds();
-        bounds.extend([delivery.restaurant_lng, delivery.restaurant_lat]);
-        bounds.extend([delivery.customer_lng, delivery.customer_lat]);
+        bounds.extend([Number(delivery.restaurant_lng) || 0, Number(delivery.restaurant_lat) || 0]);
+        bounds.extend([Number(delivery.customer_lng) || 0, Number(delivery.customer_lat) || 0]);
         map.current.fitBounds(bounds, { padding: 50 });
       }
     });
@@ -257,11 +257,11 @@ export default function RiderDelivery() {
           <a 
             href={`https://www.google.com/maps/dir/?api=1&destination=${
               delivery.status === 'assigned' 
-                ? `${delivery.restaurant_lat},${delivery.restaurant_lng}` 
-                : `${delivery.customer_lat},${delivery.customer_lng}`
+                ? `${Number(delivery.restaurant_lat) || 0},${Number(delivery.restaurant_lng) || 0}` 
+                : `${Number(delivery.customer_lat) || 0},${Number(delivery.customer_lng) || 0}`
             }${
               delivery.status !== 'assigned'
-                ? `&origin=${delivery.restaurant_lat},${delivery.restaurant_lng}`
+                ? `&origin=${Number(delivery.restaurant_lat) || 0},${Number(delivery.restaurant_lng) || 0}`
                 : ''
             }`}
             target="_blank"
@@ -274,8 +274,8 @@ export default function RiderDelivery() {
         )}
       </div>
 
-      <div className="flex-1 relative min-h-[50vh]">
-        <div ref={mapContainer} className="absolute inset-0" />
+      <div className="flex-1 relative min-h-[50vh] w-full overflow-hidden">
+        <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
         
         <button 
           onClick={updateLocation}
