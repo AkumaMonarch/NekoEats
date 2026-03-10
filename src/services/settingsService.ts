@@ -36,5 +36,33 @@ export const settingsService = {
 
     if (error) throw error;
     return data as StoreSettings;
+  },
+
+  async clearTestData() {
+    // Delete all deliveries
+    const { error: deliveriesError } = await supabase
+      .from('deliveries')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+      
+    if (deliveriesError) throw deliveriesError;
+
+    // Delete all order items
+    const { error: orderItemsError } = await supabase
+      .from('order_items')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+      
+    if (orderItemsError) throw orderItemsError;
+
+    // Delete all orders
+    const { error: ordersError } = await supabase
+      .from('orders')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+      
+    if (ordersError) throw ordersError;
+
+    return true;
   }
 };

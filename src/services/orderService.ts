@@ -18,7 +18,10 @@ export const orderService = {
     notes?: string;
   }) {
     // 1. Create Order
-    const orderCode = '#' + Math.floor(100 + Math.random() * 900).toString(); // Simple 3 digit code
+    // Generate a 6-digit order code using timestamp and random numbers to avoid collisions
+    const timestampPart = Date.now().toString().slice(-3);
+    const randomPart = Math.floor(100 + Math.random() * 900).toString();
+    const orderCode = '#' + timestampPart + randomPart;
     const initialStatus = 'pending'; // Changed to pending for MVP simplicity
     
     const { data: orderData, error: orderError } = await supabase

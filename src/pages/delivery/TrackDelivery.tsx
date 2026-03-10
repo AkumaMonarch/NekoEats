@@ -180,7 +180,7 @@ export default function TrackDelivery() {
         )}
       </div>
 
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-h-[50vh]">
         <div ref={mapContainer} className="absolute inset-0" />
       </div>
     </div>

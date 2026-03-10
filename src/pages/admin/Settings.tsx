@@ -603,6 +603,40 @@ export default function AdminSettings() {
             </div>
         </section>
 
+        <section>
+            <div className="rounded-2xl p-5 border bg-red-500/5 border-red-500/20">
+                <div className="flex items-center gap-2 text-red-500 mb-4">
+                    <span className="material-symbols-outlined">warning</span>
+                    <h3 className="font-bold text-sm uppercase tracking-wider">Danger Zone</h3>
+                </div>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="font-bold text-sm text-slate-900 dark:text-white">Clear Test Data</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Permanently delete all orders, order items, and deliveries.</p>
+                    </div>
+                    <button 
+                        onClick={async () => {
+                            if (window.confirm('Are you absolutely sure you want to delete all orders and deliveries? This action cannot be undone.')) {
+                                try {
+                                    setSaving(true);
+                                    await settingsService.clearTestData();
+                                    alert('Test data cleared successfully.');
+                                } catch (error) {
+                                    console.error('Failed to clear test data:', error);
+                                    alert('Failed to clear test data.');
+                                } finally {
+                                    setSaving(false);
+                                }
+                            }
+                        }}
+                        disabled={saving}
+                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50"
+                    >
+                        Clear Data
+                    </button>
+                </div>
+            </div>
+        </section>
 
       </main>
     </div>
