@@ -259,6 +259,10 @@ export default function RiderDelivery() {
               delivery.status === 'assigned' 
                 ? `${delivery.restaurant_lat},${delivery.restaurant_lng}` 
                 : `${delivery.customer_lat},${delivery.customer_lng}`
+            }${
+              delivery.status !== 'assigned'
+                ? `&origin=${delivery.restaurant_lat},${delivery.restaurant_lng}`
+                : ''
             }`}
             target="_blank"
             rel="noopener noreferrer"
